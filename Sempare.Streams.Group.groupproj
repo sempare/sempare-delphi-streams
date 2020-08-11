@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{8947E395-402D-4038-A0E9-5121B1C94893}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Sempare.Streams.Tester.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Sempare.Streams.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="Sempare_Streams_Tester">
+        <MSBuild Projects="Sempare.Streams.Tester.dproj"/>
+    </Target>
+    <Target Name="Sempare_Streams_Tester:Clean">
+        <MSBuild Projects="Sempare.Streams.Tester.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Sempare_Streams_Tester:Make">
+        <MSBuild Projects="Sempare.Streams.Tester.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Sempare_Streams">
+        <MSBuild Projects="Sempare.Streams.dproj"/>
+    </Target>
+    <Target Name="Sempare_Streams:Clean">
+        <MSBuild Projects="Sempare.Streams.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Sempare_Streams:Make">
+        <MSBuild Projects="Sempare.Streams.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="Sempare_Streams_Tester;Sempare_Streams"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="Sempare_Streams_Tester:Clean;Sempare_Streams:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="Sempare_Streams_Tester:Make;Sempare_Streams:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

@@ -1,0 +1,42 @@
+package Sempare.Streams;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  Sempare.Streams.Expr in 'src\Sempare.Streams.Expr.pas',
+  Sempare.Streams.Filter in 'src\Sempare.Streams.Filter.pas',
+  Sempare.Streams in 'src\Sempare.Streams.pas',
+  Sempare.Streams.Processor in 'src\Sempare.Streams.Processor.pas',
+  Sempare.Streams.RttiCache in 'src\Sempare.Streams.RttiCache.pas',
+  Sempare.Streams.Sort in 'src\Sempare.Streams.Sort.pas',
+  Sempare.Streams.Types in 'src\Sempare.Streams.Types.pas';
+
+end.

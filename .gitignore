@@ -1,0 +1,7 @@
+*.local
+*.identcache
+*.bak
+*.dproj
+__history
+__recovery
+Win32
