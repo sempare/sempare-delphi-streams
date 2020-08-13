@@ -160,7 +160,7 @@ type
 	
 	// ---- The streaming interface mapping onto the above query
 	person := Stream.From<TPerson>(connection, 'p') // p is alias for people
-	   .LeftJoin<TAddr>('addresses', 'a')) // conditions are already on the class
+	   .LeftJoin<TAddr>('a')) // conditions are already on the class
 	   .Where(field('p.id') = 1)
 	   .TakeOne; 
 	// ---- end
