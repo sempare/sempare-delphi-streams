@@ -145,11 +145,14 @@
         <DCCReference Include="src\Sempare.Streams.Expr.pas"/>
         <DCCReference Include="src\Sempare.Streams.Filter.pas"/>
         <DCCReference Include="src\Sempare.Streams.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Processor.pas"/>
-        <DCCReference Include="src\Sempare.Streams.RttiCache.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Rtti.pas"/>
         <DCCReference Include="src\Sempare.Streams.Sort.pas"/>
         <DCCReference Include="src\Sempare.Streams.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Types.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Enum.pas"/>
+        <None Include="README.md"/>
+        <None Include="LICENSE"/>
+        <None Include="docs\ideas.md"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -172,8 +175,20 @@
                 </Source>
             </Delphi.Personality>
             <Deployment Version="3">
+                <DeployFile LocalName="README.md" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule">
                     <Platform Name="OSX32">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="LICENSE" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -190,6 +205,12 @@
                 <DeployFile LocalName="Win32\Debug\Sempare.Streams.Tester.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Sempare_Streams_Tester.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="docs\ideas.md" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

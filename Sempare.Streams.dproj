@@ -122,10 +122,13 @@
         <DCCReference Include="src\Sempare.Streams.Expr.pas"/>
         <DCCReference Include="src\Sempare.Streams.Filter.pas"/>
         <DCCReference Include="src\Sempare.Streams.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Processor.pas"/>
-        <DCCReference Include="src\Sempare.Streams.RttiCache.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Rtti.pas"/>
         <DCCReference Include="src\Sempare.Streams.Sort.pas"/>
         <DCCReference Include="src\Sempare.Streams.Types.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Enum.pas"/>
+        <None Include="LICENSE"/>
+        <None Include="README.md"/>
+        <None Include="docs\ideas.md"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

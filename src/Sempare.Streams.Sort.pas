@@ -6,7 +6,7 @@ uses
   System.Generics.Collections,
   System.Generics.Defaults,
   System.Rtti,
-  Sempare.Streams.RttiCache,
+  Sempare.Streams.Rtti,
   Sempare.Streams.Types;
 
 type
@@ -47,22 +47,17 @@ type
     function Compare(const A, B: TValue): integer; override;
   end;
 
-  TSortFieldComposite = class abstract(TInterfacedObject, IComparer<TValue>)
+  TSortFieldComposite<T> = class abstract(TInterfacedObject, IComparer<T>)
   strict protected
     FComparators: TArray<IComparer<TValue>>;
     FExtractors: TArray<IFieldExtractor>;
     FExprs: TArray<TSortExpr>;
   public
-    constructor Create(const ARttiType: TRttiType; const AExprs: TArray<TSortExpr>); overload;
+    constructor Create(const AExprs: TArray<TSortExpr>); overload;
     constructor Create(const AComparators: TArray<IComparer<TValue>>; const AExprs: TArray<TSortExpr>; const AExtractors: TArray<IFieldExtractor>); overload;
     destructor Destroy; override;
-    function Compare(const A, B: TValue): integer;
+    function Compare(const A, B: T): integer;
   end;
-
-implementation
-
-uses
-  System.SysUtils;
 
 var
   SortString: IComparer<TValue>;
@@ -70,7 +65,12 @@ var
   SortDouble: IComparer<TValue>;
   SortBoolean: IComparer<TValue>;
 
-  { TSortExpr }
+implementation
+
+uses
+  System.SysUtils;
+
+{ TSortExpr }
 
 constructor TSortExpr.Create(const AName: string; const AOrder: TSortOrder);
 begin
@@ -142,9 +142,9 @@ begin
     result := 1;
 end;
 
-{ TSortFieldComposite }
+{ TSortFieldComposite<T> }
 
-function TSortFieldComposite.Compare(const A, B: TValue): integer;
+function TSortFieldComposite<T>.Compare(const A, B: T): integer;
 var
   i, cv: integer;
   av, bv: TValue;
@@ -153,9 +153,9 @@ begin
   for i := 0 to length(FExtractors) - 1 do
   begin
     e := FExtractors[i];
-    if not e.getvalue(A, av) then
+    if not e.getvalue(TValue.From<T>(A), av) then
       exit(1);
-    if not e.getvalue(B, bv) then
+    if not e.getvalue(TValue.From<T>(B), bv) then
       exit(-1);
     cv := FComparators[i].Compare(av, bv);
     if cv = 0 then
@@ -167,15 +167,16 @@ begin
   result := 0;
 end;
 
-constructor TSortFieldComposite.Create(const AComparators: TArray<IComparer<TValue>>; const AExprs: TArray<TSortExpr>; const AExtractors: TArray<IFieldExtractor>);
+constructor TSortFieldComposite<T>.Create(const AComparators: TArray<IComparer<TValue>>; const AExprs: TArray<TSortExpr>; const AExtractors: TArray<IFieldExtractor>);
 begin
   FComparators := AComparators;
   FExtractors := AExtractors;
   FExprs := AExprs;
 end;
 
-constructor TSortFieldComposite.Create(const ARttiType: TRttiType; const AExprs: TArray<TSortExpr>);
+constructor TSortFieldComposite<T>.Create(const AExprs: TArray<TSortExpr>);
 var
+  RttiType: TRttiType;
   Comparer: IComparer<TValue>;
   comparators: TArray<IComparer<TValue>>;
   extractors: TArray<IFieldExtractor>;
@@ -183,12 +184,13 @@ var
   Field: TSortExpr;
   i: integer;
 begin
+  RttiType := RttiCtx.GetType(typeinfo(T));
   setlength(comparators, 0);
   setlength(extractors, 0);
   for i := 0 to length(AExprs) - 1 do
   begin
     Field := AExprs[i];
-    e := cache.GetExtractor(ARttiType, Field.Name);
+    e := cache.GetExtractor(RttiType, Field.Name);
     insert(e, extractors, length(extractors));
     case e.RttiType.TypeKind of
       tkInteger, tkInt64:
@@ -210,7 +212,7 @@ begin
   Create(comparators, AExprs, extractors)
 end;
 
-destructor TSortFieldComposite.Destroy;
+destructor TSortFieldComposite<T>.Destroy;
 begin
   setlength(FComparators, 0);
   setlength(FExtractors, 0);

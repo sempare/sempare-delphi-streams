@@ -8,38 +8,41 @@ uses
   System.Rtti;
 
 type
-  
-  TFilterProcessor = class abstract(TInterfacedObject, IFilterProcessor)
+  TAbstractFilter<T> = class abstract(TInterfacedObject, IFilterFunction, IFilterFunction<T>)
   public
-    function Filter(const AData: TValue): boolean; virtual; abstract;
+    function IsTrue(const AData: TValue): boolean; overload; virtual; abstract;
+    function IsTrue(const AData: T): boolean; overload;
   end;
 
-  TDynamicFilterProcessor = class(TFilterProcessor)
+  TExprFilter<T> = class(TAbstractFilter<T>)
   strict private
     FExpr: TExpr;
   public
-    constructor Create(const AExpr: TExpr; const AType: TRttiType);
+    constructor Create(const AExpr: TExpr);
     destructor Destroy(); override;
-    function Filter(const AData: TValue): boolean; override;
+    function IsTrue(const AData: TValue): boolean; overload; override;
   end;
 
-  TTypedFunctionFilterProcessor<T> = class(TFilterProcessor)
+  TTypedFunctionFilter<T> = class(TAbstractFilter<T>)
   strict private
     FFunction: TFilterFunction<T>;
   public
     constructor Create(const AFunction: TFilterFunction<T>);
-    function Filter(const AData: TValue): boolean; override;
+    function IsTrue(const AData: TValue): boolean; override;
   end;
 
 implementation
 
-{ TDynamicFilterProcessor }
+uses
+  Sempare.Streams.Rtti;
 
-constructor TDynamicFilterProcessor.Create(const AExpr: TExpr; const AType: TRttiType);
+{ TExprFilter<T> }
+
+constructor TExprFilter<T>.Create(const AExpr: TExpr);
 var
   visitor: TRttiExprVisitor;
 begin
-  visitor := TRttiExprVisitor.Create(AType);
+  visitor := TRttiExprVisitor.Create(RttiCtx.GetType(typeinfo(T)));
   try
     AExpr.Accept(visitor);
   finally
@@ -48,27 +51,34 @@ begin
   FExpr := AExpr;
 end;
 
-destructor TDynamicFilterProcessor.Destroy;
+destructor TExprFilter<T>.Destroy;
 begin
   FExpr.Free;
   inherited;
 end;
 
-function TDynamicFilterProcessor.Filter(const AData: TValue): boolean;
+function TExprFilter<T>.IsTrue(const AData: TValue): boolean;
 begin
-  result := FExpr.Filter(AData);
+  result := FExpr.IsTrue(AData);
 end;
 
-{ TTypedFunctionFilterProcessor<T> }
+{ TTypedFunctionFilter<T> }
 
-constructor TTypedFunctionFilterProcessor<T>.Create(const AFunction: TFilterFunction<T>);
+constructor TTypedFunctionFilter<T>.Create(const AFunction: TFilterFunction<T>);
 begin
   FFunction := AFunction;
 end;
 
-function TTypedFunctionFilterProcessor<T>.Filter(const AData: TValue): boolean;
+function TTypedFunctionFilter<T>.IsTrue(const AData: TValue): boolean;
 begin
   result := FFunction(AData.AsType<T>());
+end;
+
+{ TFilterProcessor<T> }
+
+function TAbstractFilter<T>.IsTrue(const AData: T): boolean;
+begin
+  result := IsTrue(TValue.From<T>(AData));
 end;
 
 end.

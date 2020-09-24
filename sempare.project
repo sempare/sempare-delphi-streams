@@ -1,0 +1,37 @@
+{
+	"package-id": "ltd.sempare.streams.src",
+	"package-name": "Sempare Streams",
+	"package-type" : "source",
+	"package-platform" : "all",
+	"package-config": "all",
+	"package-img-url": "https://sempare.ltd/static/images/sempare.png",
+	"version": "0.0.1.0",
+	"description": "Sempare Streams provides a Java streams / Linq like interface for filtering data in lists, arrays and other enumerable types.",
+	"license": [ 
+			{"type":"oss", "license": "GPLv3", "url":"https://www.gnu.org/licenses/gpl-3.0.en.html"}, 
+			{"type":"commercial","license": "Semplare Commercial License", "url":"https://github.com/sempare/sempare-streams/docs/commercial.license.md"}
+	],
+	"author": "Sempare Limited",
+	"author-email": "info@sempare.ltd",
+	"author-url": "https://www.sempare.ltd",
+	"store-url": "https://www.sempare.ltd",
+	"source-path": "src/",
+	"source": [
+		"Sempare.Streams.pas",
+		"Sempare.Streams.Expr.pas",
+		"Sempare.Streams.Filter.pas",
+		"Sempare.Streams.Rtti.pas",
+		"Sempare.Streams.Sort.pas",
+		"Sempare.Streams.Types.pas",
+		"Sempare.Streams.Enum.pas",
+	],
+	"dependencies" : [ 
+			{ "id" : "ltd.sempare.compiler.inc", "version": "0.0.0+", "required":false },
+			{ "id" : "ltd.sempare.script", "version": "0.0.0+", "required":false }  
+	],
+	"targets": [ 
+		{"project":"Sempare.Streams.dproj", "install":"sempare.streams.bpl" }],
+	  {"project":"Sempare.Streams.Tester.dproj", "test":"sempare.streams.tester.exe"}
+	],
+	"min-delphi-compiler-version": 34.0,
+}

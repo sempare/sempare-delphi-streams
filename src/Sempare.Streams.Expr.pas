@@ -6,10 +6,9 @@ uses
   System.Rtti,
   System.SysUtils,
   Sempare.Streams.Types,
-  Sempare.Streams.RttiCache;
+  Sempare.Streams.Rtti;
 
 type
-
   TUnaryExpr = class;
   TBinaryExpr = class;
   TFieldExpr = class;
@@ -39,14 +38,12 @@ type
     function GetExprType: TExprType; virtual; abstract;
   public
     procedure Accept(const AVisitor: TExprVisitor); virtual;
-
-    function Filter(const AValue: TValue): boolean; virtual; abstract;
+    function IsTrue(const [ref] AValue: TValue): boolean; virtual; abstract;
 
     function AsBoolExpr: TBoolExpr;
     function AsUnaryExpr: TUnaryExpr;
     function AsBinaryExpr: TBinaryExpr;
     function AsFieldExpr: TFieldExpr;
-
     function IsExprType(const AExprType: TExprType): boolean;
 
     property ExprType: TExprType read GetExprType;
@@ -59,7 +56,7 @@ type
     function GetExprType: TExprType; override;
   public
     constructor Create(const AValue: boolean);
-    function Filter(const AValue: TValue): boolean; override;
+    function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
 
   TUnaryExpr = class(TExpr)
@@ -73,7 +70,7 @@ type
   public
     constructor Create(const AExpr: TExpr; const AOP: TOper);
     procedure Accept(const AVisitor: TExprVisitor); override;
-    function Filter(const AValue: TValue): boolean; override;
+    function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
 
   TBinaryExpr = class(TExpr)
@@ -88,7 +85,7 @@ type
   public
     constructor Create(const ALeft: TExpr; const AOP: TOper; const ARight: TExpr);
     procedure Accept(const AVisitor: TExprVisitor); override;
-    function Filter(const AValue: TValue): boolean; override;
+    function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
 
   TFieldExpr = class(TExpr)
@@ -103,7 +100,7 @@ type
     function GetExprType: TExprType; override;
   public
     constructor Create(const AField: string);
-    function Filter(const AValue: TValue): boolean; override;
+    function IsTrue(const [ref] AValue: TValue): boolean; override;
     property Field: string read FField;
     property OP: TOper read FOP write FOP;
     property Value: TValue read FValue write FValue;
@@ -112,12 +109,12 @@ type
 
   TFilterExpr = class(TExpr)
   strict private
-    FExpr: IFilterProcessor;
+    FExpr: IFilterFunction;
   strict protected
     function GetExprType: TExprType; override;
   public
-    constructor Create(const Expr: IFilterProcessor);
-    function Filter(const AValue: TValue): boolean; override;
+    constructor Create(Expr: IFilterFunction);
+    function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
 
 implementation
@@ -126,22 +123,18 @@ implementation
 
 procedure TExprVisitor.Visit(const AExpr: TUnaryExpr);
 begin
-
 end;
 
 procedure TExprVisitor.Visit(const AExpr: TBinaryExpr);
 begin
-
 end;
 
 procedure TExprVisitor.Visit(const AExpr: TFieldExpr);
 begin
-
 end;
 
 procedure TExprVisitor.Visit(const AExpr: TBoolExpr);
 begin
-
 end;
 
 { TRttiExprVisitor }
@@ -165,7 +158,7 @@ begin
   FField := AField.Trim();
 end;
 
-function TFieldExpr.Filter(const AValue: TValue): boolean;
+function TFieldExpr.IsTrue(const [ref] AValue: TValue): boolean;
 
   function GetValue(out v: TValue): boolean;
   begin
@@ -185,7 +178,7 @@ function TFieldExpr.Filter(const AValue: TValue): boolean;
     raise TExprException.Create('operator not supported');
   end;
 
-  function FilterBoolean(const A, b: TValue): boolean;
+  function FilterBoolean(const [ref] A, b: TValue): boolean;
 
     function GetVal(const A: TValue): boolean;
     begin
@@ -216,7 +209,7 @@ function TFieldExpr.Filter(const AValue: TValue): boolean;
     end;
   end;
 
-  function AsInt64(const AValue: TValue): int64;
+  function AsInt64(const [ref] AValue: TValue): int64;
   begin
     case AValue.Kind of
       tkInteger, tkInt64:
@@ -228,7 +221,7 @@ function TFieldExpr.Filter(const AValue: TValue): boolean;
     end;
   end;
 
-  function FilterInt(const A, b: TValue): boolean;
+  function FilterInt(const [ref] A, b: TValue): boolean;
 
     function GetVal(const A: TValue): int64;
     begin
@@ -259,7 +252,7 @@ function TFieldExpr.Filter(const AValue: TValue): boolean;
     end;
   end;
 
-  function AsFloat(const AValue: TValue): double;
+  function AsFloat(const [ref] AValue: TValue): double;
   begin
     case AValue.Kind of
       tkInteger, tkInt64:
@@ -271,7 +264,7 @@ function TFieldExpr.Filter(const AValue: TValue): boolean;
     end;
   end;
 
-  function FilterFloat(const A, b: TValue): boolean;
+  function FilterFloat(const [ref] A, b: TValue): boolean;
     function GetVal(const A: TValue): double;
     begin
       result := A.AsExtended;
@@ -301,7 +294,7 @@ function TFieldExpr.Filter(const AValue: TValue): boolean;
     end;
   end;
 
-  function FilterString(const A, b: TValue): boolean;
+  function FilterString(const [ref] A, b: TValue): boolean;
     function GetVal(const A: TValue): string;
     begin
       result := A.AsString;
@@ -375,14 +368,14 @@ begin
   FRight := ARight;
 end;
 
-function TBinaryExpr.Filter(const AValue: TValue): boolean;
+function TBinaryExpr.IsTrue(const [ref] AValue: TValue): boolean;
 begin
-  result := FLeft.Filter(AValue);
+  result := FLeft.IsTrue(AValue);
   case FOP of
     boAND:
-      result := result and FRight.Filter(AValue);
+      result := result and FRight.IsTrue(AValue);
     boOR:
-      result := result or FRight.Filter(AValue);
+      result := result or FRight.IsTrue(AValue);
   end;
 end;
 
@@ -404,11 +397,11 @@ begin
   FOP := AOP;
 end;
 
-function TUnaryExpr.Filter(const AValue: TValue): boolean;
+function TUnaryExpr.IsTrue(const [ref] AValue: TValue): boolean;
 begin
   case FOP of
     uoNOT:
-      result := not FExpr.Filter(AValue);
+      result := not FExpr.IsTrue(AValue);
   else
     raise TExprException.Create('unary type not supported');
   end;
@@ -467,7 +460,7 @@ begin
   FValue := AValue;
 end;
 
-function TBoolExpr.Filter(const AValue: TValue): boolean;
+function TBoolExpr.IsTrue(const [ref] AValue: TValue): boolean;
 begin
   result := FValue;
 end;
@@ -479,14 +472,14 @@ end;
 
 { TFilterExpr }
 
-constructor TFilterExpr.Create(const Expr: IFilterProcessor);
+constructor TFilterExpr.Create(Expr: IFilterFunction);
 begin
   FExpr := Expr;
 end;
 
-function TFilterExpr.Filter(const AValue: TValue): boolean;
+function TFilterExpr.IsTrue(const [ref] AValue: TValue): boolean;
 begin
-  result := self.FExpr.Filter(AValue);
+  result := FExpr.IsTrue(AValue);
 end;
 
 function TFilterExpr.GetExprType: TExprType;

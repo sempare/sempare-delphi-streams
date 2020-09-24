@@ -15,11 +15,11 @@ uses
   Sempare.Streams.Expr in 'src\Sempare.Streams.Expr.pas',
   Sempare.Streams.Filter in 'src\Sempare.Streams.Filter.pas',
   Sempare.Streams in 'src\Sempare.Streams.pas',
-  Sempare.Streams.Processor in 'src\Sempare.Streams.Processor.pas',
-  Sempare.Streams.RttiCache in 'src\Sempare.Streams.RttiCache.pas',
+  Sempare.Streams.Rtti in 'src\Sempare.Streams.Rtti.pas',
   Sempare.Streams.Sort in 'src\Sempare.Streams.Sort.pas',
   Sempare.Streams.Test in 'src\Sempare.Streams.Test.pas',
-  Sempare.Streams.Types in 'src\Sempare.Streams.Types.pas';
+  Sempare.Streams.Types in 'src\Sempare.Streams.Types.pas',
+  Sempare.Streams.Enum in 'src\Sempare.Streams.Enum.pas';
 
 var
   runner: ITestRunner;

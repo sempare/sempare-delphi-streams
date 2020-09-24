@@ -3,20 +3,29 @@ unit Sempare.Streams.Types;
 interface
 
 uses
+  System.SysUtils,
   System.Rtti;
 
 type
+  EStream = class(Exception);
+  EStreamReflect = class(EStream);
+
   TSortOrder = (soAscending, soDescending, ASC = soAscending, DESC = soDescending);
 
   TFilterFunction<TInput> = reference to function(const AInput: TInput): boolean;
 
   TMapFunction<TInput, TOutput> = reference to function(const AInput: TInput): TOutput;
   TApplyFunction<TInput> = reference to procedure(var AInput: TInput);
-  FValueFilter<TInput> = reference to function(const AValue: TValue): boolean;
+  FValueFilter = reference to function(const AValue: TValue): boolean;
 
-  IFilterProcessor = interface
-    ['{FAF8D75F-4639-4995-AE08-80EEEFE52C25}']
-    function Filter(const AData: TValue): boolean;
+  IFilterFunction = interface
+    ['{E1073079-7967-4723-B6D4-6A9CB533DF30}']
+    function IsTrue(const AValue: TValue): boolean;
+  end;
+
+  IFilterFunction<T> = interface(IFilterFunction)
+    ['{0A3EE696-9714-4389-8EEB-CEF6B7748DD5}']
+    function IsTrue(const AValue: T): boolean;
   end;
 
   IFieldExtractor = interface

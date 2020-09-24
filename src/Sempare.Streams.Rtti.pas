@@ -1,4 +1,4 @@
-unit Sempare.Streams.RttiCache;
+unit Sempare.Streams.Rtti;
 
 interface
 
@@ -12,7 +12,6 @@ uses
 type
   TCache = class
   strict private
-    FCtx: TRttiContext;
     FLock: TCriticalSection;
     FMethods: TDictionary<ptypeinfo, TRttiInvokableType>;
     FTypes: TDictionary<ptypeinfo, TRttiType>;
@@ -29,6 +28,7 @@ type
 function GetFieldsFromString(const AType: TRttiType; const A: string): TArray<TRttiField>;
 
 var
+  RttiCtx: TRttiContext;
   Cache: TCache;
 
 implementation
@@ -54,7 +54,6 @@ type
 constructor TCache.Create;
 begin
   FLock := TCriticalSection.Create;
-  FCtx := TRttiContext.Create;
   FMethods := TDictionary<ptypeinfo, TRttiInvokableType>.Create;
   FTypes := TDictionary<ptypeinfo, TRttiType>.Create;
   FExtractors := TDictionary<TArray<TRttiField>, IFieldExtractor>.Create;
@@ -63,7 +62,6 @@ end;
 destructor TCache.Destroy;
 begin
   FLock.Free;
-  FCtx.Free;
   FExtractors.Free;
   FMethods.Free;
   FTypes.Free;
@@ -118,7 +116,7 @@ begin
   try
     if not FMethods.TryGetValue(AInfo, result) then
     begin
-      result := FCtx.GetType(AInfo) as TRttiInvokableType;
+      result := RttiCtx.GetType(AInfo) as TRttiInvokableType;
       FMethods.Add(AInfo, result);
     end;
   finally
@@ -133,7 +131,7 @@ begin
   try
     if not FTypes.TryGetValue(AInfo, result) then
     begin
-      result := FCtx.GetType(AInfo);
+      result := RttiCtx.GetType(AInfo);
       FTypes.Add(AInfo, result);
     end;
   finally
