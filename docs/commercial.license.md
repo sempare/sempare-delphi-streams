@@ -2,7 +2,7 @@
 
 The commercial license for the library gives you the right to:
 
-- use the library for development of applications or any type of software module in general by a single named developer.
+- use the library for development of applications or any type of software module in general by a single named developer
 - sell any commercial compiled application using the library
 - make modifications to the source code of the library for your own use
 - use the component and source code on all development systems used by the developer

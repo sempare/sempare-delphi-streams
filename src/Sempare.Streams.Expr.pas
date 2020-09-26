@@ -23,6 +23,17 @@ type
     procedure Visit(const AExpr: TFieldExpr); overload; virtual;
   end;
 
+  IVisitableExpr = interface(IExpr)
+    ['{C3242CA6-1996-41AB-BC8A-1281183DA76F}']
+    procedure Accept(const AVisitor: TExprVisitor);
+
+    // function AsBoolExpr: TBoolExpr;
+    // function AsUnaryExpr: TUnaryExpr;
+    // function AsBinaryExpr: TBinaryExpr;
+    // function AsFieldExpr: TFieldExpr;
+
+  end;
+
   TRttiExprVisitor = class(TExprVisitor)
   strict private
     FType: TRttiType;
@@ -31,9 +42,7 @@ type
     procedure Visit(const AExpr: TFieldExpr); overload; override;
   end;
 
-  TExprType = (etUnary, etBinary, etField, etBoolean, etFilter);
-
-  TExpr = class abstract
+  TExpr = class abstract(TInterfacedObject, IExpr, IVisitableExpr)
   strict protected
     function GetExprType: TExprType; virtual; abstract;
   public
@@ -63,12 +72,14 @@ type
   type
     TOper = (uoNOT);
   strict private
-    FExpr: TExpr;
+    FExpr: IExpr;
     FOP: TOper;
   strict protected
     function GetExprType: TExprType; override;
   public
-    constructor Create(const AExpr: TExpr; const AOP: TOper);
+    constructor Create(AExpr: IExpr; const AOP: TOper);
+    destructor Destroy; override;
+
     procedure Accept(const AVisitor: TExprVisitor); override;
     function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
@@ -77,34 +88,41 @@ type
   type
     TOper = (boAND, boOR);
   strict private
-    FLeft: TExpr;
+    FLeft: IExpr;
     FOP: TOper;
-    FRight: TExpr;
+    FRight: IExpr;
   strict protected
     function GetExprType: TExprType; override;
   public
-    constructor Create(const ALeft: TExpr; const AOP: TOper; const ARight: TExpr);
+    constructor Create(ALeft: IExpr; const AOP: TOper; ARight: IExpr);
+    destructor Destroy; override;
     procedure Accept(const AVisitor: TExprVisitor); override;
     function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
 
-  TFieldExpr = class(TExpr)
-  type
-    TOper = (foEQ, foLT, foLTE, foGT, foGTE, foNEQ);
+  TFieldExpr = class(TExpr, IFieldExpr)
   strict private
     FField: string;
-    FOP: TOper;
+    FOP: TFieldExprOper;
     FValue: TValue;
     FRttiField: IFieldExtractor;
+    function GetField: string;
+    function GetOP: TFieldExprOper;
+    function GetRttiField: IFieldExtractor;
+    function GetValue: TValue;
+    procedure SetOP(const Value: TFieldExprOper);
+    procedure SetRttiField(const Value: IFieldExtractor);
+    procedure SetValue(const Value: TValue);
   strict protected
     function GetExprType: TExprType; override;
   public
     constructor Create(const AField: string);
+    destructor Destroy; override;
     function IsTrue(const [ref] AValue: TValue): boolean; override;
-    property Field: string read FField;
-    property OP: TOper read FOP write FOP;
-    property Value: TValue read FValue write FValue;
-    property RttiField: IFieldExtractor read FRttiField write FRttiField;
+    property Field: string read GetField;
+    property OP: TFieldExprOper read GetOP write SetOP;
+    property Value: TValue read GetValue write SetValue;
+    property RttiField: IFieldExtractor read GetRttiField write SetRttiField;
   end;
 
   TFilterExpr = class(TExpr)
@@ -114,6 +132,8 @@ type
     function GetExprType: TExprType; override;
   public
     constructor Create(Expr: IFilterFunction);
+    destructor Destroy; override;
+
     function IsTrue(const [ref] AValue: TValue): boolean; override;
   end;
 
@@ -146,7 +166,7 @@ end;
 
 procedure TRttiExprVisitor.Visit(const AExpr: TFieldExpr);
 begin
-  AExpr.RttiField := Cache.GetExtractor(FType, AExpr.Field);
+  AExpr.RttiField := StreamCache.GetExtractor(FType, AExpr.Field);
   if AExpr.Value.TypeInfo = TypeInfo(TFieldExpr) then
     Visit(AExpr.Value.AsType<TFieldExpr>);
 end;
@@ -348,24 +368,76 @@ begin
   end;
 end;
 
+procedure TFieldExpr.SetOP(const Value: TFieldExprOper);
+begin
+  Self.FOP := Value;
+end;
+
+procedure TFieldExpr.SetRttiField(const Value: IFieldExtractor);
+begin
+  FRttiField := Value;
+end;
+
+procedure TFieldExpr.SetValue(const Value: TValue);
+begin
+  FValue := Value;
+end;
+
+destructor TFieldExpr.Destroy;
+begin
+  FRttiField := nil;
+  inherited;
+end;
+
 function TFieldExpr.GetExprType: TExprType;
 begin
   result := etField;
 end;
 
+function TFieldExpr.GetField: string;
+begin
+  result := FField;
+end;
+
+function TFieldExpr.GetOP: TFieldExprOper;
+begin
+  result := FOP;
+end;
+
+function TFieldExpr.GetRttiField: IFieldExtractor;
+begin
+  result := FRttiField;
+end;
+
+function TFieldExpr.GetValue: TValue;
+begin
+  result := FValue;
+end;
+
 { TBinOp }
 
 procedure TBinaryExpr.Accept(const AVisitor: TExprVisitor);
+var
+  e: IVisitableExpr;
 begin
-  FLeft.Accept(AVisitor);
-  FRight.Accept(AVisitor);
+  if supports(FLeft, IVisitableExpr, e) then
+    e.Accept(AVisitor);
+  if supports(FRight, IVisitableExpr, e) then
+    e.Accept(AVisitor);
 end;
 
-constructor TBinaryExpr.Create(const ALeft: TExpr; const AOP: TOper; const ARight: TExpr);
+constructor TBinaryExpr.Create(ALeft: IExpr; const AOP: TOper; ARight: IExpr);
 begin
   FLeft := ALeft;
   FOP := AOP;
   FRight := ARight;
+end;
+
+destructor TBinaryExpr.Destroy;
+begin
+  FLeft := nil;
+  FRight := nil;
+  inherited;
 end;
 
 function TBinaryExpr.IsTrue(const [ref] AValue: TValue): boolean;
@@ -387,14 +459,23 @@ end;
 { TUnaryOp }
 
 procedure TUnaryExpr.Accept(const AVisitor: TExprVisitor);
+var
+  e: IVisitableExpr;
 begin
-  FExpr.Accept(AVisitor);
+  if supports(FExpr, IVisitableExpr, e) then
+    e.Accept(AVisitor);
 end;
 
-constructor TUnaryExpr.Create(const AExpr: TExpr; const AOP: TOper);
+constructor TUnaryExpr.Create(AExpr: IExpr; const AOP: TOper);
 begin
   FExpr := AExpr;
   FOP := AOP;
+end;
+
+destructor TUnaryExpr.Destroy;
+begin
+  FExpr := nil;
+  inherited;
 end;
 
 function TUnaryExpr.IsTrue(const [ref] AValue: TValue): boolean;
@@ -416,36 +497,36 @@ end;
 
 procedure TExpr.Accept(const AVisitor: TExprVisitor);
 begin
-  if self is TFieldExpr then
-    AVisitor.Visit(self.AsFieldExpr)
-  else if self is TBinaryExpr then
-    AVisitor.Visit(self.AsBinaryExpr)
-  else if self is TUnaryExpr then
-    AVisitor.Visit(self.AsUnaryExpr)
-  else if self is TBoolExpr then
-    AVisitor.Visit(self.AsBoolExpr)
+  if Self is TFieldExpr then
+    AVisitor.Visit(Self.AsFieldExpr)
+  else if Self is TBinaryExpr then
+    AVisitor.Visit(Self.AsBinaryExpr)
+  else if Self is TUnaryExpr then
+    AVisitor.Visit(Self.AsUnaryExpr)
+  else if Self is TBoolExpr then
+    AVisitor.Visit(Self.AsBoolExpr)
   else
     raise TExprException.Create('unexpected expression type');
 end;
 
 function TExpr.AsBinaryExpr: TBinaryExpr;
 begin
-  result := self as TBinaryExpr;
+  result := Self as TBinaryExpr;
 end;
 
 function TExpr.AsBoolExpr: TBoolExpr;
 begin
-  result := self as TBoolExpr;
+  result := Self as TBoolExpr;
 end;
 
 function TExpr.AsFieldExpr: TFieldExpr;
 begin
-  result := self as TFieldExpr;
+  result := Self as TFieldExpr;
 end;
 
 function TExpr.AsUnaryExpr: TUnaryExpr;
 begin
-  result := self as TUnaryExpr;
+  result := Self as TUnaryExpr;
 end;
 
 function TExpr.IsExprType(const AExprType: TExprType): boolean;
@@ -480,6 +561,12 @@ end;
 function TFilterExpr.IsTrue(const [ref] AValue: TValue): boolean;
 begin
   result := FExpr.IsTrue(AValue);
+end;
+
+destructor TFilterExpr.Destroy;
+begin
+  FExpr := nil;
+  inherited;
 end;
 
 function TFilterExpr.GetExprType: TExprType;

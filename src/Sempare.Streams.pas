@@ -1,4 +1,5 @@
 ﻿unit Sempare.Streams;
+{$optimization off}
 
 interface
 
@@ -51,9 +52,9 @@ type
   /// </summary>
   TExpression = record
   strict private
-    FExpr: TExpr;
+    FExpr: IExpr;
   public
-    constructor Create(const AExpr: TExpr);
+    constructor Create(AExpr: IExpr);
     class operator LogicalAnd(const ALeft: boolean; const ARight: TExpression): TExpression; overload; static;
     class operator LogicalAnd(const ALeft: TExpression; const ARight: boolean): TExpression; overload; static;
     class operator LogicalAnd(const ALeft: TExpression; const ARight: TExpression): TExpression; overload; static;
@@ -61,7 +62,7 @@ type
     class operator LogicalOr(const ALeft: TExpression; const ARight: TExpression): TExpression; overload; static;
     class operator LogicalOr(const ALeft: TExpression; const ARight: boolean): TExpression; overload; static;
     class operator LogicalNot(const AExpr: TExpression): TExpression; overload; static;
-    property Expr: TExpr read FExpr;
+    property Expr: IExpr read FExpr;
   end;
 
   /// <summary>
@@ -72,9 +73,10 @@ type
   /// </summary>
   TFieldExpression = record
   strict private
-    FExpr: TFieldExpr;
+    FExpr: IFieldExpr;
   public
-    constructor Create(const AExpr: TFieldExpr);
+    constructor Create(AExpr: IFieldExpr);
+
     class operator Implicit(const AField: string): TFieldExpression;
 
     class operator Equal(const AField, AValue: TFieldExpression): TExpression;
@@ -112,7 +114,7 @@ type
     class operator GreaterThan(const AField: TFieldExpression; const AValue: int64): TExpression; overload; static;
     class operator GreaterThanOrEqual(const AField: TFieldExpression; const AValue: int64): TExpression; overload; static;
 
-    property FieldExpr: TFieldExpr read FExpr;
+    property FieldExpr: IFieldExpr read FExpr;
   end;
 
   /// <summary>
@@ -123,56 +125,63 @@ type
   /// </summary>
   TSortExpression = record
   strict private
-    FExprs: TArray<TSortExpr>;
+    FExprs: TArray<ISortExpr>;
   public
-    constructor Create(const AExpr: TSortExpr); overload;
-    constructor Create(const AExprs: TArray<TSortExpr>); overload;
+    constructor Create(AExpr: ISortExpr); overload;
+    constructor Create(AExprs: TArray<ISortExpr>); overload;
 
     class operator Implicit(const AField: TFieldExpression): TSortExpression; static;
     class function Field(const AName: string; const AOrder: TSortOrder = soAscending): TSortExpression; static;
     class operator LogicalAnd(const ALeft: TSortExpression; const ARight: TSortExpression): TSortExpression; overload; static;
 
-    property Exprs: TArray<TSortExpr> read FExprs;
-  end;
-
-  TFilteredStream<T> = record
-  strict private
-    FEnum: IEnum<T>;
-  public
-    constructor Create(Enum: IEnum<T>);
-
-    function SortBy(const AExpr: TSortExpression): TFilteredStream<T>;
-    function TakeOne: T;
-    function ToArray(): TArray<T>;
-    function ToList(): TList<T>;
-    function Take(const ANumber: integer): TFilteredStream<T>; overload;
-    function Skip(const ANumber: integer): TFilteredStream<T>; overload;
-    function Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TFilteredStream<TOutput>;
-    procedure Apply(const AFunction: TApplyFunction<T>);
-    // function GroupBy<TFieldType>(const AField: string): TDictionary<TFieldType, TList<T>>; overload;
-    // function GroupBy<TFieldType>(const AField: string): TDictionary<TFieldType, T>; overload;
-    // function GroupBy<TFieldType>(const AFunc: TMapFunction<TFieldType, T>): TDictionary<TFieldType, TData>; overload;
-    function Count: integer;
-
-    //property Enum: IEnum<T> read FEnum;
+    property Exprs: TArray<ISortExpr> read FExprs;
   end;
 
   TStreamOperation<T> = record
-  strict private
+  private
     FEnum: IEnum<T>;
+
+    function GetEnum: IEnum<T>;
+    function IsCached: boolean;
+
   public
-    constructor Create(Enum: IEnum<T>);
+    class operator Implicit(Enum: IEnum<T>): TStreamOperation<T>; static;
 
-    function SortBy(const AExpr: TSortExpression): TFilteredStream<T>;
 
-    function Filter(const ACondition: TExpression): TFilteredStream<T>; overload;
-    function Filter(const ACondition: TFilterFunction<T>): TFilteredStream<T>; overload;
-    function Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>;
+    // class operator Implicit(Enum: IEnum<T>): TStreamOperation<T>; static;
+
+    function SortBy(const AExpr: TSortExpression): TStreamOperation<T>;
+    function TakeOne: T;
+    function ToArray(): TArray<T>;
+    function ToList(): TList<T>;
+    function Take(const ANumber: integer): TStreamOperation<T>; overload;
+    function Skip(const ANumber: integer): TStreamOperation<T>; overload;
+    function Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TStreamOperation<TOutput>;
     procedure Apply(const AFunction: TApplyFunction<T>);
-    // function GroupBy<TFieldType>(const AField: string): TDictionary<TFieldType, T>; overload;
-    // function GroupBy<TFieldType, TData>(const AField: string): TDictionary<TFieldType, TData>; overload;
+
+    function Cache: TStreamOperation<T>;
+
+    function InnerJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+      : TStreamOperation<TJoined>;
+    function LeftJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+      : TStreamOperation<TJoined>;
+    function RightJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+      : TStreamOperation<TJoined>;
+    function FullJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+      : TStreamOperation<TJoined>;
+
+    function Filter(const ACondition: TExpression): TStreamOperation<T>; overload;
+    function Filter(const ACondition: TFilterFunction<T>): TStreamOperation<T>; overload;
+
+    function GroupBy<TKeyType>(AField: IFieldExpr): TDictionary<TKeyType, T>; overload;
+    function GroupBy<TKeyType, TValueType>(AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>; overload;
+    function GroupToLists<TKeyType>(AField: IFieldExpr): TDictionary<TKeyType, TList<T>>; overload;
+    function GroupToLists<TKeyType, TValueType>(AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TList<TValueType>>; overload;
+    function GroupToArray<TKeyType>(AField: IFieldExpr): TDictionary<TKeyType, TArray<T>>; overload;
+    function GroupToArray<TKeyType, TValueType>(AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>; overload;
+
     function Count: integer;
-    //property Enum: IEnum<T> read FEnum;
+
   end;
 
   /// <summary>
@@ -193,11 +202,11 @@ type
   /// [StreamRef(TPerson)]<para/>
   /// TPersonMeta = record<para/>
   /// [StreamRef('FFN')]<para/>
-  /// FirstName : TFieldExpression;<para/>
+  /// FirstName : IFieldExpression;<para/>
   /// [StreamRef('FLN')]<para/>
-  /// LastName : TFieldExpression;<para/>
+  /// LastName : IFieldExpression;<para/>
   /// [StreamRef('FAge')]<para/>
-  /// Age : TFieldExpression;<para/>
+  /// Age : IFieldExpression;<para/>
   /// end; <para/><para/>
   /// </code>
   /// <code>
@@ -227,13 +236,6 @@ type
     /// <param name="ASource">A source of type TArray&lt;T&gt;.</param>
     /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TArray source.</returns>;
     class function From<T>(const ASource: TArray<T>): TStreamOperation<T>; overload; static;
-
-    /// <summary>
-    /// Stream from a dynarray (TList&lt;T&gt;) source.
-    /// </summary>
-    /// <param name="ASource">A source of type TList.</param>
-    /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TList source.</returns>;
-    class function From<T>(const ASource: TList<T>): TStreamOperation<T>; overload; static;
 
     /// <summary>
     /// Reflect the metadata record from a given type.
@@ -288,12 +290,12 @@ end;
 
 { TSortExpression }
 
-constructor TSortExpression.Create(const AExprs: TArray<TSortExpr>);
+constructor TSortExpression.Create(AExprs: TArray<ISortExpr>);
 begin
   FExprs := AExprs;
 end;
 
-constructor TSortExpression.Create(const AExpr: TSortExpr);
+constructor TSortExpression.Create(AExpr: ISortExpr);
 begin
   setlength(FExprs, 1);
   FExprs[0] := AExpr;
@@ -311,7 +313,7 @@ end;
 
 class operator TSortExpression.LogicalAnd(const ALeft, ARight: TSortExpression): TSortExpression;
 var
-  e: TSortExpr;
+  e: ISortExpr;
 begin
   result.FExprs := ALeft.FExprs;
   for e in ARight.FExprs do
@@ -320,7 +322,7 @@ end;
 
 { TExpression }
 
-constructor TExpression.Create(const AExpr: TExpr);
+constructor TExpression.Create(AExpr: IExpr);
 begin
   FExpr := AExpr;
 end;
@@ -387,14 +389,14 @@ begin
   result.FExpr := TFieldExpr.Create(AField);
 end;
 
-function GetExpr(const AExpr: TFieldExpr; const AOP: TFieldExpr.TOper; const AValue: TValue): TFieldExpr; inline;
+function GetExpr(AExpr: IFieldExpr; const AOP: TFieldExprOper; const AValue: TValue): IFieldExpr; inline;
 begin
   AExpr.OP := AOP;
   AExpr.Value := AValue;
   result := AExpr;
 end;
 
-constructor TFieldExpression.Create(const AExpr: TFieldExpr);
+constructor TFieldExpression.Create(AExpr: IFieldExpr);
 begin
   FExpr := AExpr;
 end;
@@ -431,32 +433,32 @@ end;
 
 class operator TFieldExpression.Equal(const AField: TFieldExpression; const AValue: TFieldExpression): TExpression;
 begin
-  result := TExpression.Create(GetExpr(AField.FExpr, foEQ, TValue.From<TFieldExpr>(AValue.FExpr)));
+  result := TExpression.Create(GetExpr(AField.FExpr, foEQ, TValue.From<IFieldExpr>(AValue.FExpr)));
 end;
 
 class operator TFieldExpression.GreaterThan(const AField: TFieldExpression; const AValue: TFieldExpression): TExpression;
 begin
-  result := TExpression.Create(GetExpr(AField.FExpr, foGT, TValue.From<TFieldExpr>(AValue.FExpr)));
+  result := TExpression.Create(GetExpr(AField.FExpr, foGT, TValue.From<IFieldExpr>(AValue.FExpr)));
 end;
 
 class operator TFieldExpression.GreaterThanOrEqual(const AField: TFieldExpression; const AValue: TFieldExpression): TExpression;
 begin
-  result := TExpression.Create(GetExpr(AField.FExpr, foGTE, TValue.From<TFieldExpr>(AValue.FExpr)));
+  result := TExpression.Create(GetExpr(AField.FExpr, foGTE, TValue.From<IFieldExpr>(AValue.FExpr)));
 end;
 
 class operator TFieldExpression.LessThan(const AField: TFieldExpression; const AValue: TFieldExpression): TExpression;
 begin
-  result := TExpression.Create(GetExpr(AField.FExpr, foLT, TValue.From<TFieldExpr>(AValue.FExpr)));
+  result := TExpression.Create(GetExpr(AField.FExpr, foLT, TValue.From<IFieldExpr>(AValue.FExpr)));
 end;
 
 class operator TFieldExpression.LessThanOrEqual(const AField: TFieldExpression; const AValue: TFieldExpression): TExpression;
 begin
-  result := TExpression.Create(GetExpr(AField.FExpr, foLTE, TValue.From<TFieldExpr>(AValue.FExpr)));
+  result := TExpression.Create(GetExpr(AField.FExpr, foLTE, TValue.From<IFieldExpr>(AValue.FExpr)));
 end;
 
 class operator TFieldExpression.NotEqual(const AField: TFieldExpression; const AValue: TFieldExpression): TExpression;
 begin
-  result := TExpression.Create(GetExpr(AField.FExpr, foNEQ, TValue.From<TFieldExpr>(AValue.FExpr)));
+  result := TExpression.Create(GetExpr(AField.FExpr, foNEQ, TValue.From<IFieldExpr>(AValue.FExpr)));
 end;
 
 class operator TFieldExpression.Equal(const AField: TFieldExpression; const AValue: string): TExpression;
@@ -549,125 +551,177 @@ begin
   result := TExpression.Create(GetExpr(AField.FExpr, foNEQ, AValue));
 end;
 
-{ TFilteredStream<T> }
+{ TStreamOperation<T> }
 
-function TFilteredStream<T>.Count: integer;
+function TStreamOperation<T>.Cache: TStreamOperation<T>;
 begin
-  result := Enum.Count<T>(FEnum);
+  // we want to minimise caching if we can
+  if IsCached then
+    result := Self
+  else
+    result := Enum.Cache<T>(GetEnum);
 end;
 
-constructor TFilteredStream<T>.Create(Enum: IEnum<T>);
+function TStreamOperation<T>.Count: integer;
 begin
-  FEnum := Enum;
+  result := Enum.Count<T>(GetEnum);
 end;
 
-function TFilteredStream<T>.Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TFilteredStream<TOutput>;
+class operator TStreamOperation<T>.Implicit(Enum: IEnum<T>): TStreamOperation<T>;
 begin
-  result := TFilteredStream<TOutput>.Create(TMapEnum<T, TOutput>.Create(FEnum, AFunction));
+  result.FEnum := Enum;
 end;
 
-function TFilteredStream<T>.SortBy(const AExpr: TSortExpression): TFilteredStream<T>;
+function TStreamOperation<T>.GetEnum: IEnum<T>;
 begin
-  result := TFilteredStream<T>.Create( //
-    TSortedEnum<T>.Create(FEnum, //
-    TSortFieldComposite<T>.Create(AExpr.Exprs)) //
-    );
+  result := FEnum;
 end;
 
-function TFilteredStream<T>.Skip(const ANumber: integer): TFilteredStream<T>;
+function TStreamOperation<T>.GroupBy<TKeyType, TValueType>(AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>;
 begin
-  result := TFilteredStream<T>.Create(TSkip<T>.Create(FEnum, ANumber));
+  result := Enum.GroupBy<T, TKeyType, TValueType>(GetEnum, AField, AFunction);
 end;
 
-function TFilteredStream<T>.Take(const ANumber: integer): TFilteredStream<T>;
+function TStreamOperation<T>.GroupBy<TKeyType>(AField: IFieldExpr): TDictionary<TKeyType, T>;
 begin
-  result := TFilteredStream<T>.Create(ttake<T>.Create(FEnum, ANumber));
+  result := Enum.GroupBy<T, TKeyType>(GetEnum, AField);
 end;
 
-function TFilteredStream<T>.TakeOne: T;
+function TStreamOperation<T>.GroupToArray<TKeyType, TValueType>(AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>;
+begin
+  result := Enum.GroupToArray<T, TKeyType, TValueType>(GetEnum, AField, AFunction);
+end;
+
+function TStreamOperation<T>.GroupToArray<TKeyType>(AField: IFieldExpr): TDictionary<TKeyType, TArray<T>>;
+begin
+  result := Enum.GroupToArray<T, TKeyType>(GetEnum, AField);
+end;
+
+function TStreamOperation<T>.GroupToLists<TKeyType, TValueType>(AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TList<TValueType>>;
+begin
+  result := Enum.GroupToLists<T, TKeyType, TValueType>(GetEnum, AField, AFunction);
+end;
+
+function TStreamOperation<T>.GroupToLists<TKeyType>(AField: IFieldExpr): TDictionary<TKeyType, TList<T>>;
+begin
+  result := Enum.GroupToLists<T, TKeyType>(GetEnum, AField);
+end;
+
+function TStreamOperation<T>.IsCached: boolean;
+begin
+  result := supports(FEnum, IEnumCache<T>);
+end;
+
+function TStreamOperation<T>.InnerJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+  : TStreamOperation<TJoined>;
+begin
+  result := TjoinEnum<T, TOther, TJoined>.Create( //
+    GetEnum, AOther.GetEnum, AOn, ASelect);
+end;
+
+function TStreamOperation<T>.LeftJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+  : TStreamOperation<TJoined>;
+begin
+  result := TLeftJoinEnum<T, TOther, TJoined>.Create(GetEnum, AOther.GetEnum, AOn, ASelect);
+end;
+
+function TStreamOperation<T>.Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TStreamOperation<TOutput>;
+begin
+  result := TMapEnum<T, TOutput>.Create(GetEnum, AFunction);
+end;
+
+function TStreamOperation<T>.RightJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+  : TStreamOperation<TJoined>;
+begin
+  result := AOther.LeftJoin<T, TJoined>(Self,
+    function(const A: TOther; const B: T): boolean
+    begin
+      result := AOn(B, A);
+    end,
+    function(const A: TOther; const B: T): TJoined
+    begin
+      result := ASelect(B, A);
+    end);
+end;
+
+function TStreamOperation<T>.SortBy(const AExpr: TSortExpression): TStreamOperation<T>;
+begin
+  result := TSortedEnum<T>.Create(GetEnum, //
+    TSortFieldComposite<T>.Create(AExpr.Exprs)); //
+end;
+
+function TStreamOperation<T>.Skip(const ANumber: integer): TStreamOperation<T>;
+begin
+  result := TSkip<T>.Create(GetEnum, ANumber);
+end;
+
+function TStreamOperation<T>.Take(const ANumber: integer): TStreamOperation<T>;
+begin
+  result := ttake<T>.Create(GetEnum, ANumber);
+end;
+
+function TStreamOperation<T>.TakeOne: T;
 var
   res: TArray<T>;
 begin
-  res := Enum.ToArray<T>(ttake<T>.Create(FEnum, 1));
+  res := Enum.ToArray<T>(ttake<T>.Create(GetEnum, 1));
   if length(res) <> 1 then
     raise EStream.Create('Expecting one item');
   result := res[0];
   res := nil;
 end;
 
-function TFilteredStream<T>.ToArray: TArray<T>;
+function TStreamOperation<T>.ToArray: TArray<T>;
 begin
-  result := Enum.ToArray<T>(FEnum);
+  result := Enum.ToArray<T>(GetEnum);
 end;
 
-function TFilteredStream<T>.ToList: TList<T>;
+function TStreamOperation<T>.ToList: TList<T>;
 begin
-  result := Enum.ToList<T>(FEnum);
-end;
-
-procedure TFilteredStream<T>.Apply(const AFunction: TApplyFunction<T>);
-begin
-  Enum.Apply<T>(FEnum, AFunction);
-end;
-
-{ TStreamOperation<T> }
-
-function TStreamOperation<T>.Count: integer;
-begin
-  result := Enum.Count<T>(FEnum);
-end;
-
-function TStreamOperation<T>.Filter(const ACondition: TExpression): TFilteredStream<T>;
-begin
-  result := TFilteredStream<T>.Create( //
-    TFilterEnum<T>.Create(FEnum, //
-    TExprFilter<T>.Create(ACondition.Expr) //
-    ) //
-    );
-end;
-
-constructor TStreamOperation<T>.Create(Enum: IEnum<T>);
-begin
-  FEnum := Enum;
-end;
-
-function TStreamOperation<T>.Filter(const ACondition: TFilterFunction<T>): TFilteredStream<T>;
-begin
-  result := TFilteredStream<T>.Create( //
-    TFilterEnum<T>.Create(FEnum, //
-    TTypedFunctionFilter<T>.Create(ACondition) //
-    ) //
-    );
-end;
-
-function TStreamOperation<T>.SortBy(const AExpr: TSortExpression): TFilteredStream<T>;
-begin
-  result := TFilteredStream<T>.Create( //
-    TSortedEnum<T>.Create(FEnum, //
-    TSortFieldComposite<T>.Create(AExpr.Exprs)) //
-    );
-end;
-
-function TStreamOperation<T>.Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>;
-begin
-  result := Enum.Map<T, TOutput>(FEnum, AFunction);
+  result := Enum.ToList<T>(GetEnum);
 end;
 
 procedure TStreamOperation<T>.Apply(const AFunction: TApplyFunction<T>);
 begin
-  Enum.Apply<T>(FEnum, AFunction);
+  Enum.Apply<T>(GetEnum, AFunction);
+end;
+
+function TStreamOperation<T>.Filter(const ACondition: TExpression): TStreamOperation<T>;
+begin
+  result := TFilterEnum<T>.Create(GetEnum, //
+    TExprFilter<T>.Create(ACondition.Expr) //
+    );
+end;
+
+function TStreamOperation<T>.Filter(const ACondition: TFilterFunction<T>): TStreamOperation<T>;
+begin
+  result := TFilterEnum<T>.Create(GetEnum, //
+    TTypedFunctionFilter<T>.Create(ACondition) //
+    );
+end;
+
+function TStreamOperation<T>.FullJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
+  : TStreamOperation<TJoined>;
+var
+  c: TStreamOperation<TOther>;
+begin
+  c := Enum.Cache<TOther>(AOther.FEnum);
+  result := TUnionEnum<TJoined>.Create( //
+    [LeftJoin<TOther, TJoined>(c, AOn, ASelect).FEnum, //
+    RightJoin<TOther, TJoined>(c, AOn, ASelect).FEnum //
+    ]);
 end;
 
 { Stream }
 
 class function Stream.From<T>(const ASource: TArray<T>): TStreamOperation<T>;
 begin
-  result := TStreamOperation<T>.Create(TArrayEnum<T>.Create(ASource));
+  result := TArrayEnum<T>.Create(ASource);
 end;
 
 class function Stream.From<T>(const ASource: TEnumerable<T>): TStreamOperation<T>;
 begin
-  result := TStreamOperation<T>.Create(TEnumerableEnum2<T>.Create(ASource));
+  result := TEnumerableEnum2<T>.Create(ASource);
 end;
 
 class function Stream.ReflectMetadata<TMetadata, T>: TMetadata;
@@ -679,7 +733,7 @@ var
   Expr: TFieldExpression;
   exprVal, resVal, v: TValue;
 begin
-  FillChar(result, sizeof(result), 0);
+  fillchar(result, sizeof(result), 0);
   fieldExprType := rttiCtx.GetType(typeinfo(TFieldExpression));
   metaType := rttiCtx.GetType(typeinfo(TMetadata));
   resVal := TValue.From<TMetadata>(result);
@@ -713,12 +767,7 @@ end;
 
 class function Stream.From<T>(const ASource: IEnumerable<T>): TStreamOperation<T>;
 begin
-  result := TStreamOperation<T>.Create(TEnumerableEnum<T>.Create(ASource));
-end;
-
-class function Stream.From<T>(const ASource: TList<T>): TStreamOperation<T>;
-begin
-  result := TStreamOperation<T>.Create(TEnumerableEnum2<T>.Create(ASource));
+  result := TEnumerableEnum<T>.Create(ASource);
 end;
 
 { StreamFieldAttribute }

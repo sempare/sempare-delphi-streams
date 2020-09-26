@@ -16,9 +16,9 @@ type
 
   TExprFilter<T> = class(TAbstractFilter<T>)
   strict private
-    FExpr: TExpr;
+    FExpr: IExpr;
   public
-    constructor Create(const AExpr: TExpr);
+    constructor Create(AExpr: IExpr);
     destructor Destroy(); override;
     function IsTrue(const AData: TValue): boolean; overload; override;
   end;
@@ -34,17 +34,20 @@ type
 implementation
 
 uses
+  System.SysUtils,
   Sempare.Streams.Rtti;
 
 { TExprFilter<T> }
 
-constructor TExprFilter<T>.Create(const AExpr: TExpr);
+constructor TExprFilter<T>.Create(AExpr: IExpr);
 var
   visitor: TRttiExprVisitor;
+  e: IVisitableExpr;
 begin
   visitor := TRttiExprVisitor.Create(RttiCtx.GetType(typeinfo(T)));
   try
-    AExpr.Accept(visitor);
+    if supports(AExpr, IVisitableExpr, e) then
+      e.Accept(visitor);
   finally
     visitor.Free;
   end;
@@ -53,7 +56,7 @@ end;
 
 destructor TExprFilter<T>.Destroy;
 begin
-  FExpr.Free;
+  FExpr := nil;
   inherited;
 end;
 

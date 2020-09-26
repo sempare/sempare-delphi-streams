@@ -9,28 +9,33 @@ uses
   Sempare.Streams.Filter;
 
 type
-  IEnum<T> = interface
-    ['{B5EAE436-8EE0-404A-B842-E6BD90B23E6F}']
-    function EOF: boolean;
-    procedure Next;
-    function Current: T;
-    function HasMore: boolean;
-  end;
-
   Enum = class
   public
     class function Count<T>(AEnum: IEnum<T>): integer; static;
     class function ToArray<T>(AEnum: IEnum<T>): TArray<T>; static;
     class function ToList<T>(AEnum: IEnum<T>): TList<T>; static;
     class procedure Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyFunction<T>); static;
-    // class function Cache<T>(AEnum: IEnum<T>): IEnum<T>; static;
+    class function IsCached<T>(AEnum: IEnum<T>): boolean; static;
+    class function TryGetCached<T>(AEnum: IEnum<T>; out ACachedEnum: IEnum<T>): boolean; static;
+    class function Cache<T>(AEnum: IEnum<T>): IEnum<T>; overload; static;
+    class function Cache<T>(AEnum: TList<T>): IEnum<T>; overload; static;
+    class function Cache<T>(AEnum: TEnumerable<T>): IEnum<T>; overload; static;
     class function Map<T, TOutput>(AEnum: IEnum<T>; const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>; static;
+
+    class function GroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, T>; overload; static;
+    class function GroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>; overload; static;
+    class function GroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TList<T>>; overload; static;
+    class function GroupToLists<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TList<TValueType>>; overload; static;
+    class function GroupToArray<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TArray<T>>; overload; static;
+    class function GroupToArray<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>;
+      overload; static;
   end;
 
   THasMore<T> = class abstract(TInterfacedObject, IEnum<T>)
   private
     FFirst: boolean;
   public
+    constructor Create;
     function EOF: boolean; virtual; abstract;
     procedure Next; virtual; abstract;
     function Current: T; virtual; abstract;
@@ -54,6 +59,7 @@ type
     FEof: boolean;
   public
     constructor Create(const AEnum: TEnumerable<T>);
+    destructor Destroy; override;
     function EOF: boolean; override;
     function Current: T; override;
     procedure Next; override;
@@ -65,6 +71,7 @@ type
     FEof: boolean;
   public
     constructor Create(const AEnum: IEnumerable<T>);
+    destructor Destroy; override;
     function EOF: boolean; override;
     function Current: T; override;
     procedure Next; override;
@@ -75,6 +82,7 @@ type
     FEnum: IEnum<T>;
   public
     constructor Create(AEnum: IEnum<T>);
+    destructor Destroy; override;
     function EOF: boolean; override;
     procedure Next; override;
     function Current: T; override;
@@ -86,6 +94,18 @@ type
     FEnum: IEnum<T>;
   public
     constructor Create(Enum: IEnum<T>; comparator: IComparer<T>);
+    destructor Destroy; override;
+    function EOF: boolean; override;
+    function Current: T; override;
+    procedure Next; override;
+  end;
+
+  TUnionEnum<T> = class(THasMore<T>)
+  private
+    FEnums: TArray<IEnum<T>>;
+    FIdx: integer;
+  public
+    constructor Create(Enum: TArray < IEnum < T >> );
     destructor Destroy; override;
     function EOF: boolean; override;
     function Current: T; override;
@@ -129,33 +149,32 @@ type
     function Current: T; override;
   end;
 
-  (* ICache<T> = interface
-    ['{704AB8CE-4AD0-4166-A235-F0B2F8C0A20D}']
-    function GetEnum: IEnum<T>;
-    end;
-
-    TCache<T> = class(TInterfacedObject, ICache<T>)
-    private
+  TEnumCache<T> = class(TInterfacedObject, IEnumCache<T>)
+  private
     FCache: TList<T>;
     FOwn: boolean;
-    public
-    constructor Create(AEnum: IEnum<T>; const AOwn: boolean = false);
+  public
+    constructor Create(AEnum: TList<T>); overload;
+    constructor Create(AEnum: TEnumerable<T>); overload;
+    constructor Create(AEnum: IEnum<T>; const AOwn: boolean = false); overload;
     destructor Destroy; override;
+    function GetCache: TList<T>;
     function GetEnum: IEnum<T>;
-    end;
+  end;
 
-    TCachedEnum<T> = class(THasMore<T>, ICache<T>)
-    private
-    FCache: ICache<T>;
+  TCachedEnum<T> = class(THasMore<T>, IEnumCache<T>)
+  private
+    FCache: IEnumCache<T>;
     FEnum: IEnum<T>;
-    public
-    constructor Create(AEnum: IEnum<T>; const AOwn: boolean = false);
+  public
+    constructor Create(Cache: IEnumCache<T>);
     destructor Destroy; override;
     function EOF: boolean; override;
     procedure Next; override;
     function Current: T; override;
+    function GetCache: TList<T>;
     function GetEnum: IEnum<T>;
-    end; *)
+  end;
 
   TMapEnum<TInput, TOutput> = class(THasMore<TOutput>)
   private
@@ -169,16 +188,61 @@ type
     procedure Next; override;
   end;
 
+  TJoinEnum<TLeft, TRight, TJoined> = class(THasMore<TJoined>)
+  private
+    FEnumLeft: IEnum<TLeft>;
+    FEnumRight: IEnum<TRight>;
+    FOn: TJoinOnFunction<TLeft, TRight>;
+    FSelect: TJoinSelectFunction<TLeft, TRight, TJoined>;
+    FHasLeft, FHasRight: boolean;
+    FNext: TJoined;
+    FHasNext: boolean;
+    procedure FindNext;
+    procedure ResetRight;
+  public
+    constructor Create( //
+      AEnumLeft: IEnum<TLeft>; AEnumRight: IEnum<TRight>; //
+      const AOn: TJoinOnFunction<TLeft, TRight>; const ASelect: TJoinSelectFunction<TLeft, TRight, TJoined>);
+    destructor Destroy; override;
+    function Current: TJoined; override;
+    function EOF: boolean; override;
+    procedure Next; override;
+  end;
+
+  TLeftJoinEnum<TLeft, TRight, TJoined> = class(THasMore<TJoined>)
+  private
+    FEnumLeft: IEnum<TLeft>;
+    FEnumRight: IEnum<TRight>;
+    FOn: TJoinOnFunction<TLeft, TRight>;
+    FSelect: TJoinSelectFunction<TLeft, TRight, TJoined>;
+    FHasLeft, FHasRight: boolean;
+    FNext: TJoined;
+    FHasNext: boolean;
+    FFoundRight: boolean;
+    procedure FindNext;
+    procedure ResetRight;
+  public
+    constructor Create( //
+      AEnumLeft: IEnum<TLeft>; AEnumRight: IEnum<TRight>; //
+      const AOn: TJoinOnFunction<TLeft, TRight>; const ASelect: TJoinSelectFunction<TLeft, TRight, TJoined>);
+    destructor Destroy; override;
+    function Current: TJoined; override;
+    function EOF: boolean; override;
+    procedure Next; override;
+  end;
+
 implementation
 
 uses
   System.SysUtils,
-  System.Rtti;
+  System.Rtti,
+  Sempare.Streams.Rtti;
 
 { TArrayEnum<T> }
 
 constructor TArrayEnum<T>.Create(const AData: TArray<T>);
 begin
+  inherited Create();
   FData := AData;
 end;
 
@@ -203,6 +267,7 @@ end;
 
 constructor TEnumerableEnum<T>.Create(const AEnum: IEnumerable<T>);
 begin
+  inherited Create();
   FEnum := AEnum.GetEnumerator;
   Next;
 end;
@@ -210,6 +275,12 @@ end;
 function TEnumerableEnum<T>.Current: T;
 begin
   result := FEnum.Current;
+end;
+
+destructor TEnumerableEnum<T>.Destroy;
+begin
+  FEnum := nil;
+  inherited;
 end;
 
 function TEnumerableEnum<T>.EOF: boolean;
@@ -226,12 +297,19 @@ end;
 
 constructor TBaseEnum<T>.Create(AEnum: IEnum<T>);
 begin
+  inherited Create();
   FEnum := AEnum;
 end;
 
 function TBaseEnum<T>.Current: T;
 begin
   result := FEnum.Current;
+end;
+
+destructor TBaseEnum<T>.Destroy;
+begin
+  FEnum := nil;
+  inherited;
 end;
 
 function TBaseEnum<T>.EOF: boolean;
@@ -354,34 +432,67 @@ procedure TMapEnum<TInput, TOutput>.Next;
 begin
   FEnum.Next;
 end;
-(*
-  { TCache<T> }
 
-  constructor TCache<T>.Create(AEnum: IEnum<T>; const AOwn: boolean);
-  begin
+{ TEnumCache<T> }
+
+constructor TEnumCache<T>.Create(AEnum: IEnum<T>; const AOwn: boolean);
+begin
+  inherited Create();
   FCache := TList<T>.Create;
   FOwn := AOwn;
+  while AEnum.HasMore do
+  begin
+    FCache.Add(AEnum.Current);
   end;
+end;
 
-  destructor TCache<T>.Destroy;
-  var
+constructor TEnumCache<T>.Create(AEnum: TList<T>);
+begin
+  inherited Create();
+  FCache := AEnum;
+  FOwn := false;
+end;
+
+constructor TEnumCache<T>.Create(AEnum: TEnumerable<T>);
+var
+  e: TEnumerator<T>;
+begin
+  inherited Create();
+  FCache := TList<T>.Create;
+  FOwn := false;
+  e := AEnum.GetEnumerator;
+  while e.MoveNext do
+  begin
+    FCache.Add(e.Current);
+  end;
+end;
+
+destructor TEnumCache<T>.Destroy;
+var
   val: T;
   obj: TObject;
-  begin
+begin
   if FOwn then
-  for val in FCache do
   begin
-  move(val, obj, sizeof(obj));
-  obj.Free;
+    for val in FCache do
+    begin
+      move(val, obj, sizeof(obj));
+      obj.Free;
+    end;
   end;
   FCache.Free;
   inherited;
-  end;
+end;
 
-  function TCache<T>.GetEnum: IEnum<T>;
-  begin
-  result := TEnumerableEnum<T>.Create(FCache);
-  end; *)
+function TEnumCache<T>.GetCache: TList<T>;
+begin
+  result := FCache;
+end;
+
+function TEnumCache<T>.GetEnum: IEnum<T>;
+begin
+  result := TCachedEnum<T>.Create(self);
+end;
 
 { TApplyEnum<T> }
 
@@ -398,6 +509,11 @@ begin
 end;
 
 { THasMore<T> }
+
+constructor THasMore<T>.Create;
+begin
+  FFirst := false;
+end;
 
 function THasMore<T>.HasMore: boolean;
 begin
@@ -423,6 +539,19 @@ begin
     result.Add(AEnum.Current);
 end;
 
+class function Enum.TryGetCached<T>(AEnum: IEnum<T>; out ACachedEnum: IEnum<T>): boolean;
+var
+  c: TCachedEnum<T>;
+begin
+  if Enum.IsCached<T>(AEnum) then
+  begin
+    c := AEnum as TCachedEnum<T>;
+    ACachedEnum := c.GetEnum;
+    exit(true);
+  end;
+  exit(false);
+end;
+
 class procedure Enum.Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyFunction<T>);
 var
   v: T;
@@ -433,18 +562,20 @@ begin
     AFunc(v);
   end;
 end;
-(*
-  class function Enum.Cache<T>(AEnum: IEnum<T>): IEnum<T>;
-  var
-  c: ICache<T>;
-  begin
-  if AEnum is TCachedEnum<T> then
-  begin
-  if supports(AEnum, ICache<T>, c) then
-  exit(c.GetEnum);
-  end;
-  exit(nil);
-  end; *)
+
+class function Enum.Cache<T>(AEnum: IEnum<T>): IEnum<T>;
+var
+  res: IEnum<T>;
+begin
+  if Enum.TryGetCached<T>(AEnum, res) then
+    exit(res);
+  result := TEnumCache<T>.Create(AEnum).GetEnum;
+end;
+
+class function Enum.Cache<T>(AEnum: TList<T>): IEnum<T>;
+begin
+  result := TEnumCache<T>.Create(AEnum).GetEnum;
+end;
 
 class function Enum.Count<T>(AEnum: IEnum<T>): integer;
 begin
@@ -453,52 +584,172 @@ begin
     inc(result);
 end;
 
+class function Enum.GroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>;
+var
+  extractor: IFieldExtractor;
+  valueT: T;
+  val, keyVal: TValue;
+begin
+  result := TDictionary<TKeyType, TValueType>.Create();
+  extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
+  while AEnum.HasMore do
+  begin
+    valueT := AEnum.Current;
+    val := TValue.From<T>(valueT);
+    extractor.GetValue(val, keyVal);
+    result.AddOrSetValue(keyVal.AsType<TKeyType>(), AFunction(valueT));
+  end;
+end;
+
+class function Enum.GroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, T>;
+begin
+  result := Enum.GroupBy<T, TKeyType, T>(AEnum, AField,
+    function(const A: T): T
+    begin
+      result := A;
+    end);
+end;
+
+class function Enum.GroupToArray<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>;
+var
+  extractor: IFieldExtractor;
+  valueT: T;
+  val, keyVal: TValue;
+  lst: TArray<TValueType>;
+  key: TKeyType;
+begin
+  result := TDictionary < TKeyType, TArray < TValueType >>.Create();
+  extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
+  while AEnum.HasMore do
+  begin
+    valueT := AEnum.Current;
+    val := TValue.From<T>(valueT);
+    if not extractor.GetValue(val, keyVal) then
+      raise EStream.CreateFmt('Key ''%s'' not found', [AField.Field]);
+    key := keyVal.AsType<TKeyType>();
+    if not result.TryGetValue(key, lst) then
+    begin
+      lst := [AFunction(valueT)];
+      result.Add(key, lst);
+    end
+    else
+    begin
+      lst := lst + [AFunction(valueT)];
+      result.AddOrSetValue(key, lst);
+    end;
+  end;
+end;
+
+class function Enum.GroupToArray<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TArray<T>>;
+begin
+  result := Enum.GroupToArray<T, TKeyType, T>(AEnum, AField,
+    function(const A: T): T
+    begin
+      result := A;
+    end);
+end;
+
+class function Enum.GroupToLists<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TList<TValueType>>;
+var
+  extractor: IFieldExtractor;
+  valueT: T;
+  val, keyVal: TValue;
+  lst: TList<TValueType>;
+  key: TKeyType;
+begin
+  result := TDictionary < TKeyType, TList < TValueType >>.Create();
+  extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
+  while AEnum.HasMore do
+  begin
+    valueT := AEnum.Current;
+    val := TValue.From<T>(valueT);
+    if not extractor.GetValue(val, keyVal) then
+      raise EStream.CreateFmt('Key ''%s'' not found', [AField.Field]);
+    key := keyVal.AsType<TKeyType>();
+    if not result.TryGetValue(key, lst) then
+    begin
+      lst := TList<TValueType>.Create;
+      result.Add(key, lst);
+    end;
+    lst.Add(AFunction(valueT));
+  end;
+end;
+
+class function Enum.GroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TList<T>>;
+begin
+  result := Enum.GroupToLists<T, TKeyType, T>(AEnum, AField,
+    function(const A: T): T
+    begin
+      result := A;
+    end);
+end;
+
+class function Enum.IsCached<T>(AEnum: IEnum<T>): boolean;
+var
+  o: TObject;
+begin
+  o := AEnum as TObject;
+  result := AEnum is TCachedEnum<T>;
+end;
+
 class function Enum.Map<T, TOutput>(AEnum: IEnum<T>; const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>;
 begin
   setlength(result, 0);
   while AEnum.HasMore do
     insert(AFunction(AEnum.Current), result, length(result));
 end;
-(*
-  { TCachedEnum<T> }
 
-  constructor TCachedEnum<T>.Create(AEnum: IEnum<T>; const AOwn: boolean);
-  begin
-  FCache := TCache<T>.Create(AEnum, AOwn);
-  FEnum := GetEnum;
-  end;
+class function Enum.Cache<T>(AEnum: TEnumerable<T>): IEnum<T>;
+begin
+  result := TEnumCache<T>.Create(AEnum).GetEnum;
+end;
 
-  function TCachedEnum<T>.Current: T;
-  begin
+{ TCachedEnum<T> }
+
+constructor TCachedEnum<T>.Create(Cache: IEnumCache<T>);
+begin
+  inherited Create();
+  FCache := Cache;
+  FEnum := TEnumerableEnum2<T>.Create(GetCache);
+end;
+
+function TCachedEnum<T>.Current: T;
+begin
   result := FEnum.Current;
-  end;
+end;
 
-  destructor TCachedEnum<T>.Destroy;
-  begin
+destructor TCachedEnum<T>.Destroy;
+begin
   FCache := nil;
   FEnum := nil;
   inherited;
-  end;
+end;
 
-  function TCachedEnum<T>.EOF: boolean;
-  begin
+function TCachedEnum<T>.EOF: boolean;
+begin
   result := FEnum.EOF;
-  end;
+end;
 
-  function TCachedEnum<T>.GetEnum: IEnum<T>;
-  begin
-  result := FCache.GetEnum;
-  end;
+function TCachedEnum<T>.GetCache: TList<T>;
+begin
+  result := FCache.GetCache;
+end;
 
-  procedure TCachedEnum<T>.Next;
-  begin
+function TCachedEnum<T>.GetEnum: IEnum<T>;
+begin
+  result := TCachedEnum<T>.Create(FCache);
+end;
+
+procedure TCachedEnum<T>.Next;
+begin
   FEnum.Next;
-  end; *)
+end;
 
 { TEnumerableEnum2<T> }
 
 constructor TEnumerableEnum2<T>.Create(const AEnum: TEnumerable<T>);
 begin
+  inherited Create();
   FEnum := AEnum.GetEnumerator;
   Next;
 end;
@@ -506,6 +757,12 @@ end;
 function TEnumerableEnum2<T>.Current: T;
 begin
   result := FEnum.Current;
+end;
+
+destructor TEnumerableEnum2<T>.Destroy;
+begin
+  FEnum.Free;
+  inherited;
 end;
 
 function TEnumerableEnum2<T>.EOF: boolean;
@@ -525,6 +782,7 @@ var
   v: T;
   i: integer;
 begin
+  inherited Create();
   FItems := TList<T>.Create;
   while Enum.HasMore do
   begin
@@ -543,6 +801,7 @@ end;
 destructor TSortedEnum<T>.Destroy;
 begin
   FItems.Free;
+  FEnum := nil;
   inherited;
 end;
 
@@ -554,6 +813,206 @@ end;
 procedure TSortedEnum<T>.Next;
 begin
   FEnum.Next;
+end;
+
+{ TJoinEnum<TLeft, TRight, TJoined> }
+
+constructor TJoinEnum<TLeft, TRight, TJoined>.Create( //
+  AEnumLeft: IEnum<TLeft>; AEnumRight: IEnum<TRight>; //
+const AOn: TJoinOnFunction<TLeft, TRight>; const ASelect: TJoinSelectFunction<TLeft, TRight, TJoined>);
+begin
+  inherited Create();
+  FEnumLeft := AEnumLeft;
+  FEnumRight := Enum.Cache<TRight>(AEnumRight);
+  FOn := AOn;
+  FSelect := ASelect;
+  FHasLeft := FEnumLeft.HasMore;
+  FHasRight := FEnumRight.HasMore;
+  FindNext;
+end;
+
+function TJoinEnum<TLeft, TRight, TJoined>.Current: TJoined;
+begin
+  result := FNext;
+end;
+
+destructor TJoinEnum<TLeft, TRight, TJoined>.Destroy;
+begin
+  FEnumLeft := nil;
+  FEnumRight := nil;
+  inherited;
+end;
+
+function TJoinEnum<TLeft, TRight, TJoined>.EOF: boolean;
+begin
+  result := not FHasNext;
+end;
+
+procedure TJoinEnum<TLeft, TRight, TJoined>.FindNext;
+var
+  left: TLeft;
+  right: TRight;
+  match: boolean;
+begin
+  FHasNext := false;
+  while FHasLeft and FHasRight do
+  begin
+    left := FEnumLeft.Current;
+    right := FEnumRight.Current;
+
+    match := FOn(left, right);
+    if match then
+    begin
+      FHasNext := true;
+      FNext := FSelect(left, right);
+    end;
+
+    FHasRight := FEnumRight.HasMore;
+    if not FHasRight then
+    begin
+      FHasLeft := FEnumLeft.HasMore;
+      ResetRight;
+    end;
+    if match then
+      exit;
+  end;
+end;
+
+procedure TJoinEnum<TLeft, TRight, TJoined>.Next;
+begin
+  FindNext;
+end;
+
+procedure TJoinEnum<TLeft, TRight, TJoined>.ResetRight;
+var
+  res: IEnum<TRight>;
+begin
+  if Enum.TryGetCached<TRight>(FEnumRight, res) then
+    FEnumRight := res;
+  FHasRight := FEnumRight.HasMore;
+end;
+
+{ TUnionEnum<T> }
+
+constructor TUnionEnum<T>.Create(Enum: TArray < IEnum < T >> );
+begin
+  inherited Create();
+  FEnums := Enum;
+  FIdx := 0;
+end;
+
+function TUnionEnum<T>.Current: T;
+begin
+  result := FEnums[FIdx].Current;
+end;
+
+destructor TUnionEnum<T>.Destroy;
+begin
+  FEnums := nil;
+  inherited;
+end;
+
+function TUnionEnum<T>.EOF: boolean;
+begin
+  if (length(FEnums) = 0) or (FIdx >= length(FEnums)) then
+    exit(true);
+  result := FEnums[FIdx].EOF;
+end;
+
+procedure TUnionEnum<T>.Next;
+begin
+  FEnums[FIdx].Next;
+  if EOF then
+    inc(FIdx);
+end;
+
+{ TLeftJoinEnum<TLeft, TRight, TJoined> }
+
+constructor TLeftJoinEnum<TLeft, TRight, TJoined>.Create(AEnumLeft: IEnum<TLeft>; AEnumRight: IEnum<TRight>; const AOn: TJoinOnFunction<TLeft, TRight>;
+const ASelect: TJoinSelectFunction<TLeft, TRight, TJoined>);
+begin
+  inherited Create();
+  FEnumLeft := AEnumLeft;
+  // if not cached, we cache it
+  // if it is cached, we get a new enum
+  if not Enum.TryGetCached<TRight>(AEnumRight, FEnumRight) then
+    FEnumRight := Enum.Cache<TRight>(AEnumRight);
+  FOn := AOn;
+  FSelect := ASelect;
+  FHasLeft := FEnumLeft.HasMore;
+  FHasRight := FEnumRight.HasMore;
+  FFoundRight := false;
+  FindNext;
+
+end;
+
+function TLeftJoinEnum<TLeft, TRight, TJoined>.Current: TJoined;
+begin
+  result := FNext;
+end;
+
+destructor TLeftJoinEnum<TLeft, TRight, TJoined>.Destroy;
+begin
+  FEnumLeft := nil;
+  FEnumRight := nil;
+  inherited;
+end;
+
+function TLeftJoinEnum<TLeft, TRight, TJoined>.EOF: boolean;
+begin
+  result := not FHasNext;
+end;
+
+procedure TLeftJoinEnum<TLeft, TRight, TJoined>.FindNext;
+var
+  left: TLeft;
+  right: TRight;
+  match: boolean;
+begin
+  FHasNext := false;
+  while FHasLeft and FHasRight do
+  begin
+    left := FEnumLeft.Current;
+    right := FEnumRight.Current;
+    match := FOn(left, right);
+    if match then
+    begin
+      FHasNext := true;
+      FFoundRight := true;
+      FNext := FSelect(left, right);
+    end;
+    FHasRight := FEnumRight.HasMore;
+    if not FHasRight then
+    begin
+      if not FFoundRight then
+      begin
+        fillchar(right, sizeof(right), 0);
+        FHasNext := true;
+        FNext := FSelect(left, right);
+        match := true;
+      end;
+
+      FHasLeft := FEnumLeft.HasMore;
+      ResetRight;
+    end;
+    if match then
+      exit;
+  end;
+end;
+
+procedure TLeftJoinEnum<TLeft, TRight, TJoined>.Next;
+begin
+  FindNext;
+end;
+
+procedure TLeftJoinEnum<TLeft, TRight, TJoined>.ResetRight;
+var
+  res: IEnum<TRight>;
+begin
+  if Enum.TryGetCached<TRight>(FEnumRight, res) then
+    FEnumRight := res;
+  FFoundRight := false;
+  FHasRight := FEnumRight.HasMore;
 end;
 
 end.

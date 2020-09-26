@@ -6,9 +6,9 @@ program Sempare.Streams.Tester;
 
 uses
   System.SysUtils,
-  {$IFDEF TESTINSIGHT}
+{$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
-  {$ENDIF }
+{$ENDIF }
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
   DUnitX.TestFramework,
@@ -28,6 +28,7 @@ var
   nunitLogger: ITestLogger;
 
 begin
+  // ReportMemoryLeaksOnShutdown := true;
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
   exit;

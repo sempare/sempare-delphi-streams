@@ -10,16 +10,33 @@ uses
   Sempare.Streams.Types;
 
 type
-  TSortExpr = class
+  ISortExpr = interface
+    ['{C16D3780-E9A6-412C-A589-958C8610AF3B}']
+    function GetField: TRttiField;
+    function GetName: string;
+    function GetOrder: TSortOrder;
+    procedure SetField(const Value: TRttiField);
+
+    property Name: string read GetName;
+    property Order: TSortOrder read GetOrder;
+    property RttiField: TRttiField read GetField write SetField;
+  end;
+
+  TSortExpr = class(TInterfacedObject, ISortExpr)
   strict private
     FName: string;
     FOrder: TSortOrder;
     FField: TRttiField;
+  private
+    function GetField: TRttiField;
+    function GetName: string;
+    function GetOrder: TSortOrder;
+    procedure SetField(const Value: TRttiField);
   public
     constructor Create(const AName: string; const AOrder: TSortOrder);
-    property Name: string read FName;
-    property Order: TSortOrder read FOrder;
-    property RttiField: TRttiField read FField write FField;
+    property Name: string read GetName;
+    property Order: TSortOrder read GetOrder;
+    property RttiField: TRttiField read GetField write SetField;
   end;
 
   TSortFieldBase = class abstract(TInterfacedObject, IComparer<TValue>)
@@ -51,10 +68,10 @@ type
   strict protected
     FComparators: TArray<IComparer<TValue>>;
     FExtractors: TArray<IFieldExtractor>;
-    FExprs: TArray<TSortExpr>;
+    FExprs: TArray<ISortExpr>;
   public
-    constructor Create(const AExprs: TArray<TSortExpr>); overload;
-    constructor Create(const AComparators: TArray<IComparer<TValue>>; const AExprs: TArray<TSortExpr>; const AExtractors: TArray<IFieldExtractor>); overload;
+    constructor Create(AExprs: TArray<ISortExpr>); overload;
+    constructor Create(AComparators: TArray<IComparer<TValue>>; AExprs: TArray<ISortExpr>; AExtractors: TArray<IFieldExtractor>); overload;
     destructor Destroy; override;
     function Compare(const A, B: T): integer;
   end;
@@ -76,6 +93,26 @@ constructor TSortExpr.Create(const AName: string; const AOrder: TSortOrder);
 begin
   FName := AName;
   FOrder := AOrder;
+end;
+
+function TSortExpr.GetField: TRttiField;
+begin
+  result := FField;
+end;
+
+function TSortExpr.GetName: string;
+begin
+  result := FName;
+end;
+
+function TSortExpr.GetOrder: TSortOrder;
+begin
+  result := FOrder;
+end;
+
+procedure TSortExpr.SetField(const Value: TRttiField);
+begin
+  FField := Value;
 end;
 
 { TSortFieldString }
@@ -167,21 +204,21 @@ begin
   result := 0;
 end;
 
-constructor TSortFieldComposite<T>.Create(const AComparators: TArray<IComparer<TValue>>; const AExprs: TArray<TSortExpr>; const AExtractors: TArray<IFieldExtractor>);
+constructor TSortFieldComposite<T>.Create(AComparators: TArray<IComparer<TValue>>; AExprs: TArray<ISortExpr>; AExtractors: TArray<IFieldExtractor>);
 begin
   FComparators := AComparators;
   FExtractors := AExtractors;
   FExprs := AExprs;
 end;
 
-constructor TSortFieldComposite<T>.Create(const AExprs: TArray<TSortExpr>);
+constructor TSortFieldComposite<T>.Create(AExprs: TArray<ISortExpr>);
 var
   RttiType: TRttiType;
   Comparer: IComparer<TValue>;
   comparators: TArray<IComparer<TValue>>;
   extractors: TArray<IFieldExtractor>;
   e: IFieldExtractor;
-  Field: TSortExpr;
+  Field: ISortExpr;
   i: integer;
 begin
   RttiType := RttiCtx.GetType(typeinfo(T));
@@ -190,7 +227,7 @@ begin
   for i := 0 to length(AExprs) - 1 do
   begin
     Field := AExprs[i];
-    e := cache.GetExtractor(RttiType, Field.Name);
+    e := Streamcache.GetExtractor(RttiType, Field.Name);
     insert(e, extractors, length(extractors));
     case e.RttiType.TypeKind of
       tkInteger, tkInt64:
@@ -214,8 +251,9 @@ end;
 
 destructor TSortFieldComposite<T>.Destroy;
 begin
-  setlength(FComparators, 0);
-  setlength(FExtractors, 0);
+  FComparators := nil;
+  FExtractors := nil;
+  FExprs := nil;
   inherited;
 end;
 

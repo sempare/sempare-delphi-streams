@@ -1,4 +1,5 @@
 {
+	"sempare-package-version" : 1,
 	"package-id": "ltd.sempare.streams.src",
 	"package-name": "Sempare Streams",
 	"package-type" : "source",
@@ -26,11 +27,11 @@
 		"Sempare.Streams.Enum.pas",
 	],
 	"dependencies" : [ 
-			{ "id" : "ltd.sempare.compiler.inc", "version": "0.0.0+", "required":false },
-			{ "id" : "ltd.sempare.script", "version": "0.0.0+", "required":false }  
+			{ "url" : "https://www.github.com/sempare/sempare.compiler.inc", "version": "0.0.0+", "required":false, "include":true },
+			{ "url" : "https://www.github.com/sempare/sempare.script", "version": "0.0.0+", "required":false }  
 	],
 	"targets": [ 
-		{"project":"Sempare.Streams.dproj", "install":"sempare.streams.bpl" }],
+	  {"project":"Sempare.Streams.dproj", "install":"sempare.streams.bpl" }],
 	  {"project":"Sempare.Streams.Tester.dproj", "test":"sempare.streams.tester.exe"}
 	],
 	"min-delphi-compiler-version": 34.0,

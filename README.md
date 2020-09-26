@@ -49,12 +49,12 @@ type
   
   TPersonMeta = record
     [SteamRef('name')]
-    firstname: TFieldExpression;
-    value: TFieldExpression;
-    addr: TFieldExpression;
-    sugar: TFieldExpression;
+    firstname: IFieldExpression;
+    value: IFieldExpression;
+    addr: IFieldExpression;
+    sugar: IFieldExpression;
     [StreamRef('num')]
-    number: TFieldExpression;
+    number: IFieldExpression;
   end;
   
 var
@@ -214,12 +214,12 @@ no cost to you, or you may purchase for user under the [Sempare Limited Commerci
 A commercial licence grants you the right to use Sempare Streams in your own applications, royalty free, and without any requirement to disclose your source code nor any modifications to 
 Sempare Streams to any other party. A commercial licence lasts into perpetuity, and entitles you to all future updates, free of charge. 
 
-A commercial licence is sold per developer developing applications that use Sempare Streams. The initial cost is £15 per developer and includes first year of support. For support thereafter, 
-a nominal fee of £10 per developer per year if required (a few cups of coffee). 
+A commercial licence is sold per developer developing applications that use Sempare Streams. The initial cost is £15 per developer and includes first year of support. 
+For support thereafter, a nominal fee of £10 per developer per year if required (the cost of a few cups of coffee). 
 
 Please send an e-mail to info@sempare.ltd to request an invoice which will contain the bank details.
 
-Support and enhancement requests submitted by users that pay for support will be prioritised.
+Support and enhancement requests submitted by users that pay for support will be prioritised. New developments may incur additional costs depending on time required for implementation.
 
 
 # TODO

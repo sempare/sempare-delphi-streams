@@ -7,7 +7,7 @@
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -120,6 +120,10 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_UsePackage>DBXSqliteDriver;RESTComponents;OmniThreadLibraryRuntime;DBXInterBaseDriver;VCLTMSFNCChartPkgDXE12;FlexCel_Pdf;vclactnband;FMX_FlexCel_Core;vclFireDAC;tethering;FireDACADSDriver;Sempare.Boot.Template.Velocity.Pkg;TMSScripter;FMXTMSFNCUIPackPkgDXE12;vcltouch;vcldb;bindcompfmx;inetdb;FlexCel_Report;IcsFmxD103Run;IcsVclD103Run;FmxTeeUI;TMSScripter_Memo;fmx;FireDACIBDriver;fmxdae;VCL_FlexCel_Components;dbexpress;IndyCore;xdata;vclx;dsnap;FireDACCommon;VCLTMSFNCUIPackPkgDXE12;VCLTMSFNCCloudPackPkgDXE12;RESTBackendComponents;VCLRESTComponents;soapserver;TMSScripter_Legacy;TMSLoggingPkgFMXDXE12;remotedb;vclie;TMSScripter_VCL;bindengine;DBXMySQLDriver;CloudService;FireDACMySQLDriver;FireDACCommonODBC;FireDACCommonDriver;VCLTMSFNCCorePkgDXE12;inet;IndyIPCommon;bindcompdbx;vcl;IndyIPServer;tmsbcl;IndySystem;sparkle;VCLTMSFNCDashboardPackPkgDXE12;dsnapcon;FMXTMSFNCCorePkgDXE12;FireDACMSAccDriver;fmxFireDAC;vclimg;TeeDB;FireDAC;FlexCel_XlsAdapter;FireDACSqliteDriver;FireDACPgDriver;FMXTee;soaprtl;DbxCommonDriver;Tee;FlexCel_Core;xmlrtl;soapmidas;fmxobj;vclwinx;rtl;TMSScripter_IDE;DbxClientDriver;CustomIPTransport;vcldsnap;DOSCommandDR;bindcomp;appanalytics;FMXTMSFNCCloudPackPkgDXE12;TMSLoggingPkgVCLDXE12;IndyIPClient;bindcompvcl;TMSLoggingPkgCoreDXE12;IcsCommonD103Run;TeeUI;FMX_FlexCel_Components;dbxcds;VclSmp;adortl;VCL_FlexCel_Core;aurelius;FlexCel_Render;dsnapxml;dbrtl;IndyProtocols;inetdbxpress;FMXTMSFNCChartPkgDXE12;OnGuardFMXDR;fmxase;$(DCC_UsePackage)</DCC_UsePackage>
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -131,6 +135,8 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <Manifest_File>(None)</Manifest_File>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -173,6 +179,10 @@
                 <Source>
                     <Source Name="MainSource">Sempare.Streams.Tester.dpr</Source>
                 </Source>
+                <Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k260.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp260.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+                </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
                 <DeployFile LocalName="README.md" Configuration="Debug" Class="ProjectFile">
@@ -974,7 +984,7 @@
                 <Platform value="OSX32">False</Platform>
                 <Platform value="OSX64">False</Platform>
                 <Platform value="Win32">True</Platform>
-                <Platform value="Win64">False</Platform>
+                <Platform value="Win64">True</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

@@ -10,7 +10,7 @@ uses
   System.Rtti;
 
 type
-  TCache = class
+  TStreamTypeCache = class
   strict private
     FLock: TCriticalSection;
     FMethods: TDictionary<ptypeinfo, TRttiInvokableType>;
@@ -29,7 +29,16 @@ function GetFieldsFromString(const AType: TRttiType; const A: string): TArray<TR
 
 var
   RttiCtx: TRttiContext;
-  Cache: TCache;
+  StreamCache: TStreamTypeCache;
+
+type
+  TObjectHelper = class helper for TObject
+  public
+    class function SupportsInterface<TC: class; T: IInterface>(const AClass: TC): Boolean; overload; static;
+    class function SupportsInterface<T: IInterface>(out Intf: T): Boolean; overload; static;
+  end;
+
+function GetInterfaceTypeInfo(InterfaceTable: PInterfaceTable): ptypeinfo;
 
 implementation
 
@@ -44,14 +53,27 @@ type
     function GetRttiType: TRttiType;
   public
     constructor Create(const AFields: TArray<TRttiField>);
-    function GetValue(const AValue: TValue; var Value: TValue): boolean;
+    function GetValue(const AValue: TValue; var Value: TValue): Boolean;
     property RttiFields: TArray<TRttiField> read GetRttiFields;
     property RttiType: TRttiType read GetRttiType;
   end;
 
-  { TCache }
+function GetInterfaceTypeInfo(InterfaceTable: PInterfaceTable): ptypeinfo;
+var
+  P: PPointer;
+begin
+  if Assigned(InterfaceTable) and (InterfaceTable^.EntryCount > 0) then
+  begin
+    P := Pointer(NativeUInt(@InterfaceTable^.Entries[InterfaceTable^.EntryCount]));
+    exit(Pointer(NativeUInt(P^) + SizeOf(Pointer)));
+  end
+  else
+    exit(nil);
+end;
 
-constructor TCache.Create;
+{ TStreamTypeCache }
+
+constructor TStreamTypeCache.Create;
 begin
   FLock := TCriticalSection.Create;
   FMethods := TDictionary<ptypeinfo, TRttiInvokableType>.Create;
@@ -59,24 +81,25 @@ begin
   FExtractors := TDictionary<TArray<TRttiField>, IFieldExtractor>.Create;
 end;
 
-destructor TCache.Destroy;
+destructor TStreamTypeCache.Destroy;
 begin
   FLock.Free;
+  FExtractors.Clear;
   FExtractors.Free;
   FMethods.Free;
   FTypes.Free;
   inherited;
 end;
 
-function TCache.GetExtractor(const A: TArray<TRttiField>): IFieldExtractor;
+function TStreamTypeCache.GetExtractor(const A: TArray<TRttiField>): IFieldExtractor;
 begin
-  result := nil;
+  Result := nil;
   FLock.Acquire;
   try
-    if not FExtractors.TryGetValue(A, result) then
+    if not FExtractors.TryGetValue(A, Result) then
     begin
-      result := TFieldExtractor.Create(A);
-      FExtractors.Add(A, result);
+      Result := TFieldExtractor.Create(A);
+      FExtractors.Add(A, Result);
     end;
   finally
     FLock.Release;
@@ -87,52 +110,52 @@ function GetFieldsFromString(const AType: TRttiType; const A: string): TArray<TR
 var
   parts: TArray<string>;
   f: TRttiField;
-  i: integer;
-  numparts: integer;
+  I: Integer;
+  numparts: Integer;
 begin
   parts := A.trim.Split(['.']);
   numparts := length(parts);
   f := AType.GetField(parts[0]);
-  setlength(result, 1);
-  result[0] := f;
-  for i := 1 to numparts - 1 do
+  setlength(Result, 1);
+  Result[0] := f;
+  for I := 1 to numparts - 1 do
   begin
-    f := f.FieldType.GetField(parts[i]);
+    f := f.FieldType.GetField(parts[I]);
     if f = nil then
       raise Exception.Create('field not found');
-    insert(f, result, length(result));
+    insert(f, Result, length(Result));
   end;
 end;
 
-function TCache.GetExtractor(const AType: TRttiType; const A: string): IFieldExtractor;
+function TStreamTypeCache.GetExtractor(const AType: TRttiType; const A: string): IFieldExtractor;
 begin
-  result := GetExtractor(GetFieldsFromString(AType, A));
+  Result := GetExtractor(GetFieldsFromString(AType, A));
 end;
 
-function TCache.GetMethod(const AInfo: ptypeinfo): TRttiInvokableType;
+function TStreamTypeCache.GetMethod(const AInfo: ptypeinfo): TRttiInvokableType;
 begin
-  result := nil;
+  Result := nil;
   FLock.Acquire;
   try
-    if not FMethods.TryGetValue(AInfo, result) then
+    if not FMethods.TryGetValue(AInfo, Result) then
     begin
-      result := RttiCtx.GetType(AInfo) as TRttiInvokableType;
-      FMethods.Add(AInfo, result);
+      Result := RttiCtx.GetType(AInfo) as TRttiInvokableType;
+      FMethods.Add(AInfo, Result);
     end;
   finally
     FLock.Release;
   end;
 end;
 
-function TCache.GetType(const AInfo: ptypeinfo): TRttiType;
+function TStreamTypeCache.GetType(const AInfo: ptypeinfo): TRttiType;
 begin
-  result := nil;
+  Result := nil;
   FLock.Acquire;
   try
-    if not FTypes.TryGetValue(AInfo, result) then
+    if not FTypes.TryGetValue(AInfo, Result) then
     begin
-      result := RttiCtx.GetType(AInfo);
-      FTypes.Add(AInfo, result);
+      Result := RttiCtx.GetType(AInfo);
+      FTypes.Add(AInfo, Result);
     end;
   finally
     FLock.Release;
@@ -151,20 +174,20 @@ end;
 
 function TFieldExtractor.GetRttiFields: TArray<TRttiField>;
 begin
-  result := FRttiField;
+  Result := FRttiField;
 end;
 
 function TFieldExtractor.GetRttiType: TRttiType;
 begin
-  result := FRttiField[high(FRttiField)].FieldType;
+  Result := FRttiField[high(FRttiField)].FieldType;
 end;
 
-function TFieldExtractor.GetValue(const AValue: TValue; var Value: TValue): boolean;
+function TFieldExtractor.GetValue(const AValue: TValue; var Value: TValue): Boolean;
 var
   f: TRttiField;
-  o: tobject;
+  o: TObject;
 begin
-  result := false;
+  Result := False;
   Value := AValue;
   for f in FRttiField do
   begin
@@ -178,7 +201,7 @@ begin
         begin
           o := Value.AsObject;
           if o = nil then
-            exit(false);
+            exit(False);
           Value := f.GetValue(o);
           exit(true);
         end
@@ -188,12 +211,48 @@ begin
   end;
 end;
 
+class function TObjectHelper.SupportsInterface<T>(out Intf: T): Boolean;
+var
+  intfTable: PInterfaceTable;
+  IntfTypeInfo: ptypeinfo;
+  I: Integer;
+begin
+  Result := False;
+  intfTable := GetInterfaceTable;
+  IntfTypeInfo := GetInterfaceTypeInfo(intfTable);
+  for I := 0 to intfTable^.EntryCount - 1 do
+  begin
+    if IntfTypeInfo = TypeInfo(T) then
+      exit(true);
+    inc(IntfTypeInfo);
+  end;
+  exit(False);
+end;
+
+class function TObjectHelper.SupportsInterface<TC, T>(const AClass: TC): Boolean;
+var
+  intfTable: PInterfaceTable;
+  IntfTypeInfo: ptypeinfo;
+  I: Integer;
+begin
+  Result := False;
+  intfTable := AClass.GetInterfaceTable;
+  IntfTypeInfo := GetInterfaceTypeInfo(intfTable);
+  for I := 0 to intfTable^.EntryCount - 1 do
+  begin
+    if IntfTypeInfo = TypeInfo(T) then
+      exit(true);
+    inc(IntfTypeInfo);
+  end;
+  exit(False);
+end;
+
 initialization
 
-Cache := TCache.Create;
+StreamCache := TStreamTypeCache.Create;
 
 finalization
 
-Cache.Free;
+StreamCache.Free;
 
 end.
