@@ -79,8 +79,8 @@ var
 
 The <b>Stream</b> operations should be able to take place on records, classes and primitive types.
 
-TPersonMeta is a metadata record and should only contain fields of TFieldExpressin that map onto the fields in TPerson. Metadata records are used to reference fields in queries. 
-The StreamRef attribute can be used if an alternative name should be used. The example above illustrates how 'firstname' in the metadata record would map onto 'name' in the TPerson record, 
+TPersonMeta is a metadata record and should only contain fields of TFieldExpression that map onto the fields in TPerson. Metadata records are used to reference fields in queries. 
+The StreamField attribute can be used if an alternative name should be used. The example above illustrates how 'firstname' in the metadata record would map onto 'name' in the TPerson record, 
 but it could also be used in the common scenario where properties are F prefixed. e.g. there may be a private 'FName', where the metadata would use 'name'.
 
 ### Initialise metadata

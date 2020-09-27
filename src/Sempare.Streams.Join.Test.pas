@@ -47,20 +47,38 @@ type
   [TestFixture]
   TStreamsJoinTest = class(TStreamsTestBase)
   public
+    [Setup]
+    procedure Setup; override;
+
+    [Teardown]
+    procedure Teardown; override;
+
     [Test]
     procedure TestFullJoin;
+
     [Test]
     procedure TestJoin;
+
     [Test]
     procedure TestLeftJoin;
+
     [Test]
     procedure TestRightJoin;
-
   end;
 
 implementation
 
 uses Sempare.Streams;
+
+procedure TStreamsJoinTest.Setup;
+begin
+  inherited;
+end;
+
+procedure TStreamsJoinTest.Teardown;
+begin
+  inherited;
+end;
 
 procedure TStreamsJoinTest.TestFullJoin;
 var

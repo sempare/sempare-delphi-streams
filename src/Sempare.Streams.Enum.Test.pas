@@ -47,6 +47,12 @@ type
   [TestFixture]
   TStreamEnumTest = class(TStreamsTestBase)
   public
+    [Setup]
+    procedure Setup; override;
+
+    [Teardown]
+    procedure Teardown; override;
+
     [Test]
     procedure TestArrayEnum;
 
@@ -85,6 +91,16 @@ type
     value: integer;
     constructor Create(const avalue: integer);
   end;
+
+procedure TStreamEnumTest.Setup;
+begin
+  inherited;
+end;
+
+procedure TStreamEnumTest.Teardown;
+begin
+  inherited;
+end;
 
 procedure TStreamEnumTest.TestApplyEnum;
 var

@@ -1,12 +1,17 @@
-# SEMPARE LIMITED license agreement
+# SEMPARE LIMITED Streams license agreement
 
-The commercial license for the library gives you the right to:
+The commercial license for Sempare Streams gives you the right to:
 
 - use the library for development of applications or any type of software module in general by a single named developer
 - sell any commercial compiled application using the library
 - make modifications to the source code of the library for your own use
 - use the component and source code on all development systems used by the developer
 - sell any number of applications in any quantity without any additional run-time fees required
+
+A commercial licence is sold per developer developing applications that use Sempare Streams. The initial cost is £15 per developer and includes first year of support. 
+For support thereafter, a nominal fee of £10 per developer per year if required (the cost of a few cups of coffee). 
+
+Please send an e-mail to info@sempare.ltd to request an invoice which will contain the bank details.
 
 # Disclaimer
 

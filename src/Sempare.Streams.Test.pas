@@ -86,11 +86,16 @@ type
   [TestFixture]
   TStreamTest = class(TStreamsTestBase)
   public
+    [Setup]
+    procedure Setup; override;
+
+    [Teardown]
+    procedure Teardown; override;
 
     [Test]
     procedure TestTakeOneFound;
 
-    [Test, WillRaise(EStreamItemNotFound)]
+    [Test]
     procedure TestTakeOneNotFound;
 
     [Test]
@@ -113,6 +118,18 @@ type
 implementation
 
 { TStreamTest }
+
+procedure TStreamTest.Setup;
+begin
+  inherited;
+
+end;
+
+procedure TStreamTest.Teardown;
+begin
+  inherited;
+
+end;
 
 procedure TStreamTest.TestCount;
 var
@@ -238,26 +255,30 @@ begin
 end;
 
 procedure TStreamTest.TestTakeOneNotFound;
-var
-  people: TList<TPerson>;
-  Person: TPersonMeta;
-  johnNotFound: TPerson;
+
 begin
-  people := TList<TPerson>.Create;
-  try
-    people.Add(TPerson.Create(1, 'peter', 10, 0));
-    people.Add(TPerson.Create(2, 'john', 15, 0));
-    people.Add(TPerson.Create(3, 'mary', 8, 0));
-    Person := Stream.ReflectMetadata<TPersonMeta, TPerson>();
+  Assert.WillRaise(
+    procedure
+    var
+      people: TList<TPerson>;
+      Person: TPersonMeta;
+      johnNotFound: TPerson;
+    begin
+      people := TList<TPerson>.Create;
+      try
+        people.Add(TPerson.Create(1, 'peter', 10, 0));
+        people.Add(TPerson.Create(2, 'john', 15, 0));
+        people.Add(TPerson.Create(3, 'mary', 8, 0));
+        Person := Stream.ReflectMetadata<TPersonMeta, TPerson>();
 
-    johnNotFound := Stream.From<TPerson>(people) //
-      .Filter((Person.FirstName = 'john') and (Person.Age = 10)) //
-      .TakeOne();
+        johnNotFound := Stream.From<TPerson>(people) //
+          .Filter((Person.FirstName = 'john') and (Person.Age = 10)) //
+          .TakeOne();
 
-  finally
-    people.Free;
-  end;
-
+      finally
+        people.Free;
+      end;
+    end, EStreamItemNotFound);
 end;
 
 procedure TStreamTest.TestToArrayAndList;

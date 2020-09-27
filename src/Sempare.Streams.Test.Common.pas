@@ -73,7 +73,6 @@ type
     addr: TAddr;
   end;
 
-  [TestFixture]
   TStreamsTestBase = class
   protected
     Fpeople: TList<TPerson>;
@@ -86,11 +85,9 @@ type
     function Createaddrs2: TList<TAddr>;
 
   public
-    [Setup]
-    procedure Setup;
+    procedure Setup; virtual;
 
-    [Teardown]
-    procedure Teardown;
+    procedure Teardown; virtual;
 
   end;
 
@@ -149,13 +146,29 @@ begin
   Fpeople := CreatePeople;
   Faddrs := Createaddrs;
   Faddrs2 := Createaddrs2;
+  FArr := nil;
+  fillchar(fperson, sizeof(TPerson), 0);
 end;
 
 procedure TStreamsTestBase.Teardown;
+var
+  i: integer;
+  a: TAddr;
 begin
-  Fpeople.Free;
-  Faddrs.Free;
-  Faddrs2.Free;
+  fillchar(a, sizeof(TAddr), 0);
+  fillchar(fperson, sizeof(TPerson), 0);
+  for i := 0 to Fpeople.Count - 1 do
+  begin
+    Fpeople[i] := fperson;
+  end;
+  freeandnil(Fpeople);
+  for i := 0 to Faddrs.Count - 1 do
+    Faddrs[i] := a;
+  freeandnil(Faddrs);
+  for i := 0 to Faddrs2.Count - 1 do
+    Faddrs2[i] := a;
+  freeandnil(Faddrs2);
+  FArr := nil;
 end;
 
 { TPerson }

@@ -48,6 +48,12 @@ type
   TStreamsFilterTest = class(TStreamsTestBase)
 
   public
+    [Setup]
+    procedure Setup; override;
+
+    [Teardown]
+    procedure Teardown; override;
+
     [Test]
     procedure TestFilterinteger;
     [Test, Ignore]
@@ -80,6 +86,18 @@ type
 implementation
 
 uses Sempare.Streams;
+
+procedure TStreamsFilterTest.Setup;
+begin
+  inherited;
+
+end;
+
+procedure TStreamsFilterTest.Teardown;
+begin
+  inherited;
+
+end;
 
 procedure TStreamsFilterTest.TestFieldExpr;
 var
