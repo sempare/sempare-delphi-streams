@@ -1,3 +1,36 @@
+(*%****************************************************************************
+ *                 ___                                                        *
+ *                / __|  ___   _ __    _ __   __ _   _ _   ___                *
+ *                \__ \ / -_) | '  \  | '_ \ / _` | | '_| / -_)               *
+ *                |___/ \___| |_|_|_| | .__/ \__,_| |_|   \___|               *
+ *                                    |_|                                     *
+ ******************************************************************************
+ *                                                                            *
+ *                        Sempare Streams                                     *
+ *                                                                            *
+ *                                                                            *
+ *          https://www.github.com/sempare/sempare-streams                    *
+ ******************************************************************************
+ *                                                                            *
+ * Copyright (c) 2020 Sempare Limited,                                        *
+ *                    Conrad Vermeulen <conrad.vermeulen@gmail.com>           *
+ *                                                                            *
+ * Contact: info@sempare.ltd                                                  *
+ *                                                                            *
+ * Licensed under the GPL Version 3.0 or the Sempare Commercial License       *
+ * You may not use this file except in compliance with one of these Licenses. *
+ * You may obtain a copy of the Licenses at                                   *
+ *                                                                            *
+ * https://www.gnu.org/licenses/gpl-3.0.en.html                               *
+ * https://github.com/sempare/sempare-streams/tree/dev/docs/commercial.license.md *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the Licenses is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ *                                                                            *
+ ****************************************************************************%*)
 unit Sempare.Streams.Enum;
 
 interface
@@ -9,8 +42,13 @@ uses
   Sempare.Streams.Filter;
 
 type
+  /// <summary>
+  /// Enum is a utility class for enumerable operations
+  /// <summary>
   Enum = class
   public
+    class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean; overload; static;
+    class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IComparer<T>): boolean; overload; static;
     class function Count<T>(AEnum: IEnum<T>): integer; static;
     class function ToArray<T>(AEnum: IEnum<T>): TArray<T>; static;
     class function ToList<T>(AEnum: IEnum<T>): TList<T>; static;
@@ -31,6 +69,22 @@ type
       overload; static;
   end;
 
+  /// <summary>
+  /// THasMore is a base class for all enumerable classes. There are two ways the instances
+  /// can be used.
+  /// <code>
+  /// while enum.HasMore do
+  /// doSomething(enum.Current);
+  /// </code>
+  /// or
+  /// <code>
+  /// while not enum.EOF do
+  /// begin
+  /// doSomething(enum.Current);
+  /// enum.Next;
+  /// end;
+  /// </code>
+  /// <summary>
   THasMore<T> = class abstract(TInterfacedObject, IEnum<T>)
   private
     FFirst: boolean;
@@ -42,10 +96,14 @@ type
     function HasMore: boolean;
   end;
 
+  /// <summary>
+  /// TArrayEnum is an enumerator over an dynarray (TArray)
+  /// </summary>
   TArrayEnum<T> = class(THasMore<T>)
   private
     FData: TArray<T>;
     FOffset: integer;
+    // TODO: this should be identified as having a cache and be restartable
   public
     constructor Create(const AData: TArray<T>);
     function EOF: boolean; override;
@@ -53,7 +111,10 @@ type
     procedure Next; override;
   end;
 
-  TEnumerableEnum2<T> = class(THasMore<T>)
+  /// <summary>
+  /// TTEnumerableEnum is an enumerator over a TEnumerable
+  /// </summary>
+  TTEnumerableEnum<T> = class(THasMore<T>)
   private
     FEnum: TEnumerator<T>;
     FEof: boolean;
@@ -65,7 +126,10 @@ type
     procedure Next; override;
   end;
 
-  TEnumerableEnum<T> = class(THasMore<T>)
+  /// <summary>
+  /// TIEnumerableEnum is an enumerator over an IEnumerable
+  /// </summary>
+  TIEnumerableEnum<T> = class(THasMore<T>)
   private
     FEnum: IEnumerator<T>;
     FEof: boolean;
@@ -77,6 +141,9 @@ type
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TBaseEnum is a wrapper around another enumerator
+  /// </summary>
   TBaseEnum<T> = class abstract(THasMore<T>)
   protected
     FEnum: IEnum<T>;
@@ -88,18 +155,34 @@ type
     function Current: T; override;
   end;
 
-  TSortedEnum<T> = class(THasMore<T>)
+  /// <summary>
+  /// TSortedEnum ensures items are sorted.
+  /// </summary>
+  TSortedEnum<T> = class(TBaseEnum<T>)
   private
     FItems: TList<T>;
-    FEnum: IEnum<T>;
+    // TODO: this should be identified as having a cache and be restartable
+
   public
     constructor Create(Enum: IEnum<T>; comparator: IComparer<T>);
     destructor Destroy; override;
-    function EOF: boolean; override;
-    function Current: T; override;
-    procedure Next; override;
   end;
 
+  /// <summary>
+  /// TUniqueEnum ensures items are unique.
+  /// </summary>
+  TUniqueEnum<T> = class(TBaseEnum<T>)
+  private
+    FItems: TList<T>;
+    // TODO: this should be identified as having a cache and be restartable
+  public
+    constructor Create(Enum: IEnum<T>; comparator: IComparer<T>);
+    destructor Destroy; override;
+  end;
+
+  /// <summary>
+  /// TUnionEnum allows multiple enums be seen as a single stream.
+  /// </summary>
   TUnionEnum<T> = class(THasMore<T>)
   private
     FEnums: TArray<IEnum<T>>;
@@ -112,35 +195,47 @@ type
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TFilterEnum only returns items that for which the filter functions returns true.
+  /// </summary>
   TFilterEnum<T> = class(TBaseEnum<T>)
   private
     FFilter: IFilterFunction<T>;
     FNext: T;
     FHasValue: boolean;
   public
-    constructor Create(AEnum: IEnum<T>; AFilter: TFilterFunction<T>); overload;
-    constructor Create(AEnum: IEnum<T>; AFilter: IFilterFunction<T>); overload;
+    constructor Create(AEnum: IEnum<T>; const AFilter: TFilterFunction<T>); overload;
+    constructor Create(AEnum: IEnum<T>; const AFilter: IFilterFunction<T>); overload;
     destructor Destroy; override;
     function EOF: boolean; override;
     function Current: T; override;
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TSkip skips the first few items.
+  /// </summary>
   TSkip<T> = class(TBaseEnum<T>)
   public
-    constructor Create(AEnum: IEnum<T>; ASkip: integer);
+    constructor Create(AEnum: IEnum<T>; const ASkip: integer);
   end;
 
+  /// <summary>
+  /// TTake identifies how many items should be returned.
+  /// </summary>
   TTake<T> = class(TBaseEnum<T>)
   private
     FTake: integer;
     FEof: boolean;
   public
-    constructor Create(AEnum: IEnum<T>; ATake: integer);
+    constructor Create(AEnum: IEnum<T>; const ATake: integer);
     function EOF: boolean; override;
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TApplyEnum applies a procedure to each item in a stream
+  /// </summary>
   TApplyEnum<T> = class(TBaseEnum<T>)
   private
     FApply: TApplyFunction<T>;
@@ -149,6 +244,9 @@ type
     function Current: T; override;
   end;
 
+  /// <summary>
+  /// TEnumCache contains an array of items. GetEnum returns a TCachedEnum
+  /// </summary>
   TEnumCache<T> = class(TInterfacedObject, IEnumCache<T>)
   private
     FCache: TList<T>;
@@ -162,6 +260,9 @@ type
     function GetEnum: IEnum<T>;
   end;
 
+  /// <summary>
+  /// TCachedEnum enumerates items in the cache
+  /// </summary>
   TCachedEnum<T> = class(THasMore<T>, IEnumCache<T>)
   private
     FCache: IEnumCache<T>;
@@ -176,6 +277,9 @@ type
     function GetEnum: IEnum<T>;
   end;
 
+  /// <summary>
+  /// TMapEnum applies a function to items in the stream.
+  /// </summary>
   TMapEnum<TInput, TOutput> = class(THasMore<TOutput>)
   private
     FEnum: IEnum<TInput>;
@@ -188,6 +292,10 @@ type
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TJoinEnum allows for an 'inner join' to be done between two streams.
+  /// A matching function is required as well as a function that joins matching results.
+  /// </summary>
   TJoinEnum<TLeft, TRight, TJoined> = class(THasMore<TJoined>)
   private
     FEnumLeft: IEnum<TLeft>;
@@ -209,6 +317,10 @@ type
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TLeftJoinEnum allows for an 'left join' to be done between two streams.
+  /// A matching function is required as well as a function that joins matching results.
+  /// </summary>
   TLeftJoinEnum<TLeft, TRight, TJoined> = class(THasMore<TJoined>)
   private
     FEnumLeft: IEnum<TLeft>;
@@ -265,30 +377,30 @@ end;
 
 { TEnumerableEnum<T> }
 
-constructor TEnumerableEnum<T>.Create(const AEnum: IEnumerable<T>);
+constructor TIEnumerableEnum<T>.Create(const AEnum: IEnumerable<T>);
 begin
   inherited Create();
   FEnum := AEnum.GetEnumerator;
   Next;
 end;
 
-function TEnumerableEnum<T>.Current: T;
+function TIEnumerableEnum<T>.Current: T;
 begin
   result := FEnum.Current;
 end;
 
-destructor TEnumerableEnum<T>.Destroy;
+destructor TIEnumerableEnum<T>.Destroy;
 begin
   FEnum := nil;
   inherited;
 end;
 
-function TEnumerableEnum<T>.EOF: boolean;
+function TIEnumerableEnum<T>.EOF: boolean;
 begin
   result := FEof;
 end;
 
-procedure TEnumerableEnum<T>.Next;
+procedure TIEnumerableEnum<T>.Next;
 begin
   FEof := not FEnum.MoveNext;
 end;
@@ -324,14 +436,14 @@ end;
 
 { TFilterEnum<T> }
 
-constructor TFilterEnum<T>.Create(AEnum: IEnum<T>; AFilter: IFilterFunction<T>);
+constructor TFilterEnum<T>.Create(AEnum: IEnum<T>; const AFilter: IFilterFunction<T>);
 begin
   inherited Create(AEnum);
   FFilter := AFilter;
   Next;
 end;
 
-constructor TFilterEnum<T>.Create(AEnum: IEnum<T>; AFilter: TFilterFunction<T>);
+constructor TFilterEnum<T>.Create(AEnum: IEnum<T>; const AFilter: TFilterFunction<T>);
 begin
   Create(AEnum, TTypedFunctionFilter<T>.Create(AFilter));
 end;
@@ -371,19 +483,22 @@ end;
 
 { FSkip<T> }
 
-constructor TSkip<T>.Create(AEnum: IEnum<T>; ASkip: integer);
+constructor TSkip<T>.Create(AEnum: IEnum<T>; const ASkip: integer);
+var
+  skip: integer;
 begin
   inherited Create(AEnum);
-  while (ASkip > 0) and not EOF do
+  skip := ASkip;
+  while (skip > 0) and not EOF do
   begin
     Next;
-    dec(ASkip);
+    dec(skip);
   end;
 end;
 
 { TTake<T> }
 
-constructor TTake<T>.Create(AEnum: IEnum<T>; ATake: integer);
+constructor TTake<T>.Create(AEnum: IEnum<T>; const ATake: integer);
 begin
   inherited Create(AEnum);
   FTake := ATake;
@@ -699,6 +814,31 @@ begin
     insert(AFunction(AEnum.Current), result, length(result));
 end;
 
+class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean;
+begin
+  result := Enum.AreEqual<T>(AEnumA, AEnumB, TComparer<T>.default);
+end;
+
+class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IComparer<T>): boolean;
+var
+  A, b: T;
+  amore, bmore: boolean;
+begin
+  while true do
+  begin
+    amore := AEnumA.HasMore;
+    bmore := AEnumB.HasMore;
+    if not amore and not bmore then
+      exit(true);
+
+    if amore <> bmore then
+      exit(false);
+
+    if comparator.Compare(AEnumA.Current, AEnumB.Current) <> 0 then
+      exit(false);
+  end;
+end;
+
 class function Enum.Cache<T>(AEnum: TEnumerable<T>): IEnum<T>;
 begin
   result := TEnumCache<T>.Create(AEnum).GetEnum;
@@ -710,7 +850,7 @@ constructor TCachedEnum<T>.Create(Cache: IEnumCache<T>);
 begin
   inherited Create();
   FCache := Cache;
-  FEnum := TEnumerableEnum2<T>.Create(GetCache);
+  FEnum := TTEnumerableEnum<T>.Create(GetCache);
 end;
 
 function TCachedEnum<T>.Current: T;
@@ -747,30 +887,30 @@ end;
 
 { TEnumerableEnum2<T> }
 
-constructor TEnumerableEnum2<T>.Create(const AEnum: TEnumerable<T>);
+constructor TTEnumerableEnum<T>.Create(const AEnum: TEnumerable<T>);
 begin
   inherited Create();
   FEnum := AEnum.GetEnumerator;
   Next;
 end;
 
-function TEnumerableEnum2<T>.Current: T;
+function TTEnumerableEnum<T>.Current: T;
 begin
   result := FEnum.Current;
 end;
 
-destructor TEnumerableEnum2<T>.Destroy;
+destructor TTEnumerableEnum<T>.Destroy;
 begin
   FEnum.Free;
   inherited;
 end;
 
-function TEnumerableEnum2<T>.EOF: boolean;
+function TTEnumerableEnum<T>.EOF: boolean;
 begin
   result := FEof;
 end;
 
-procedure TEnumerableEnum2<T>.Next;
+procedure TTEnumerableEnum<T>.Next;
 begin
   FEof := not FEnum.MoveNext;
 end;
@@ -782,7 +922,6 @@ var
   v: T;
   i: integer;
 begin
-  inherited Create();
   FItems := TList<T>.Create;
   while Enum.HasMore do
   begin
@@ -790,29 +929,13 @@ begin
     FItems.BinarySearch(v, i, comparator);
     FItems.insert(i, v);
   end;
-  FEnum := TEnumerableEnum2<T>.Create(FItems);
-end;
-
-function TSortedEnum<T>.Current: T;
-begin
-  result := FEnum.Current;
+  inherited Create(TTEnumerableEnum<T>.Create(FItems));
 end;
 
 destructor TSortedEnum<T>.Destroy;
 begin
   FItems.Free;
-  FEnum := nil;
   inherited;
-end;
-
-function TSortedEnum<T>.EOF: boolean;
-begin
-  result := FEnum.EOF;
-end;
-
-procedure TSortedEnum<T>.Next;
-begin
-  FEnum.Next;
 end;
 
 { TJoinEnum<TLeft, TRight, TJoined> }
@@ -1013,6 +1136,29 @@ begin
     FEnumRight := res;
   FFoundRight := false;
   FHasRight := FEnumRight.HasMore;
+end;
+
+{ TUniqueEnum<T> }
+
+constructor TUniqueEnum<T>.Create(Enum: IEnum<T>; comparator: IComparer<T>);
+var
+  v: T;
+  i: integer;
+begin
+  FItems := TList<T>.Create;
+  while Enum.HasMore do
+  begin
+    v := Enum.Current;
+    if not FItems.BinarySearch(v, i, comparator) then
+      FItems.insert(i, v);
+  end;
+  inherited Create(TTEnumerableEnum<T>.Create(FItems));
+end;
+
+destructor TUniqueEnum<T>.Destroy;
+begin
+  FItems.Free;
+  inherited;
 end;
 
 end.

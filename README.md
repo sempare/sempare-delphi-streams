@@ -17,6 +17,15 @@ be more functional with less side effects.
 
 The current implementation is incremental in supporting features and is not focused on performance/optimisation yet.
 
+Features include:
+- counting elements
+- grouping
+- mapping one type to another type
+- applying procedures to elements
+- sorting
+- inner, left, right and full joins
+
+
 # How to use:
 
 ```
@@ -32,35 +41,40 @@ The main entry point is the _Stream_ record, where we stream from:
 
 # Sample usage
 
+Have a look at some of the [tests](./src/Sempare.Streams.Test.pas).
+
 With the following structure:
 ``` 
 type
   TAddr = record
+    id: integer;
     zip: string;
   end;
 
   TPerson = record
+    id: integer;
     name: string;
-    value: Integer;
-    addr: TAddr;
-    sugar: boolean;
-    num: double;
+    Age: integer;
+    addrid: integer;
   end;
-  
+
+  TAddrMeta = record
+  public
+    id: TFieldExpression;
+    zip: TFieldExpression;
+  end;
+
   TPersonMeta = record
-    [SteamRef('name')]
-    firstname: IFieldExpression;
-    value: IFieldExpression;
-    addr: IFieldExpression;
-    sugar: IFieldExpression;
-    [StreamRef('num')]
-    number: IFieldExpression;
+  public
+    [StreamField('name')]
+    FirstName: TFieldExpression;
+    Age: TFieldExpression;
   end;
   
 var
-  people : TList<TPerson>
+  people : TList<TPerson>;
   Person : TPersonMeta;
-  
+  Addr : TPersonMeta;
 ```
 
 The <b>Stream</b> operations should be able to take place on records, classes and primitive types.
@@ -87,7 +101,7 @@ Using the 'person' meta, a query becomes quite easy to read.
 var john15 := Stream.From<TPerson>(people).Filter((person.firstname = 'john') and (person.value = 15)).TakeOne();
 ```
 
-This will throw an exception if a record is not found;
+This will throw an EStreamItemNotFound if an item is not found;
 
 You could also break it up as follows:
 ```
@@ -121,6 +135,9 @@ var dereferencedFields := Stream.From<TPerson>(Fpeople).Filter((field('addr.zip'
 ```
 
 ### Sorting:
+
+Use SortBy() to sort on classes or records. Use Sort() if you want to use traditional ICompare comparators, 
+which can work on any type. 
 
 ```
 // sorting in a single expression
@@ -180,15 +197,66 @@ var arr := Stream.From<TPerson>(Fpeople)
   	end); 
 ```
 
+### Joins (inner, left, right and full)
+
+```
+
+var arr := Stream.From<TPerson>(Fpeople)
+    .InnerJoin<TAddr, TJoinedPersons>(Stream.From<TAddr>(Faddrs),
+    function(const a: TPerson; const b: TAddr): boolean
+    begin
+      result := a.addrid = b.id;
+    end,
+    function(const a: TPerson; const b: TAddr): TJoinedPersons
+    begin
+      result.Person := a;
+      result.addr := b;
+    end).ToArray;
+
+```
+
+To summarise the joins:
+
+- Perform an inner join on two streams, where items should match in both streams.
+- Perform an left join on two streams, where items if first stream are returned, optionally matching items in the second stream.
+- Perform an right join on two streams, where items if second stream are returned, optionally matching items in the first stream.
+- Performing a full join is a union of left and right joins on the streams.
+
+## Unique
+
+Creates a unique stream of items.
+
+```
+  Assert.IsTrue(Stream.From<integer>([1, 2, 3, 4, 5, 7]) //
+    .Equals(Stream.From<integer>([5, 4, 2, 7, 3, 3, 2, 7, 1]).Unique));
+
+  Assert.AreEqual(6, Stream.From<integer>([5, 4, 2, 7, 3, 3, 2, 7, 1]).Unique.Count);
+
+```
+
+## Grouping
+
+```
+ var  grouping: tdictionary<string, tarray<TPerson>>  := Stream.From<TPerson>(people) //
+      .GroupToArray<string>(Person.FirstName);
+
+```
+
 ## Optimising your queries  
 
 You should re-arrange your filter(), skip(), take() operations appropriately so that unnecessary map()/apply() actions are not performed.
+
+Using the Cache() you can create a temporary snapshot in order to use other streaming operations
+ based on previous transformations.
 
 ## Memory management
 
 As mentioned in Map(), you need to remember that you are responsible for any memory allocation during Map() or Apply(), or other function/procedure calls.
 
-## The field() method
+The implementation has used Delphi interfaces to free up any resources automatically so you can focus
+on your own resources.
+
+## The field() methods
 
 There are three special helper functions:
 - <b>field</b>(name) 

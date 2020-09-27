@@ -7,3 +7,7 @@ __recovery
 Win32
 Sempare.Streams.tvsconfig
 Win64
+Android
+Android64
+iOSDevice64
+OSX64

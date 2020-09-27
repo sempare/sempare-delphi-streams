@@ -1,3 +1,36 @@
+(*%****************************************************************************
+ *                 ___                                                        *
+ *                / __|  ___   _ __    _ __   __ _   _ _   ___                *
+ *                \__ \ / -_) | '  \  | '_ \ / _` | | '_| / -_)               *
+ *                |___/ \___| |_|_|_| | .__/ \__,_| |_|   \___|               *
+ *                                    |_|                                     *
+ ******************************************************************************
+ *                                                                            *
+ *                        Sempare Streams                                     *
+ *                                                                            *
+ *                                                                            *
+ *          https://www.github.com/sempare/sempare-streams                    *
+ ******************************************************************************
+ *                                                                            *
+ * Copyright (c) 2020 Sempare Limited,                                        *
+ *                    Conrad Vermeulen <conrad.vermeulen@gmail.com>           *
+ *                                                                            *
+ * Contact: info@sempare.ltd                                                  *
+ *                                                                            *
+ * Licensed under the GPL Version 3.0 or the Sempare Commercial License       *
+ * You may not use this file except in compliance with one of these Licenses. *
+ * You may obtain a copy of the Licenses at                                   *
+ *                                                                            *
+ * https://www.gnu.org/licenses/gpl-3.0.en.html                               *
+ * https://github.com/sempare/sempare-streams/tree/dev/docs/commercial.license.md *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the Licenses is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ *                                                                            *
+ ****************************************************************************%*)
 unit Sempare.Streams.Expr;
 
 interface
@@ -26,12 +59,6 @@ type
   IVisitableExpr = interface(IExpr)
     ['{C3242CA6-1996-41AB-BC8A-1281183DA76F}']
     procedure Accept(const AVisitor: TExprVisitor);
-
-    // function AsBoolExpr: TBoolExpr;
-    // function AsUnaryExpr: TUnaryExpr;
-    // function AsBinaryExpr: TBinaryExpr;
-    // function AsFieldExpr: TFieldExpr;
-
   end;
 
   TRttiExprVisitor = class(TExprVisitor)
@@ -498,13 +525,13 @@ end;
 procedure TExpr.Accept(const AVisitor: TExprVisitor);
 begin
   if Self is TFieldExpr then
-    AVisitor.Visit(Self.AsFieldExpr)
+    AVisitor.Visit(AsFieldExpr)
   else if Self is TBinaryExpr then
-    AVisitor.Visit(Self.AsBinaryExpr)
+    AVisitor.Visit(AsBinaryExpr)
   else if Self is TUnaryExpr then
-    AVisitor.Visit(Self.AsUnaryExpr)
+    AVisitor.Visit(AsUnaryExpr)
   else if Self is TBoolExpr then
-    AVisitor.Visit(Self.AsBoolExpr)
+    AVisitor.Visit(AsBoolExpr)
   else
     raise TExprException.Create('unexpected expression type');
 end;

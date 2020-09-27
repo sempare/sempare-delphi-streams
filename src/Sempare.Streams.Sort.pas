@@ -1,3 +1,69 @@
+(*%****************************************************************************
+ *                 ___                                                        *
+ *                / __|  ___   _ __    _ __   __ _   _ _   ___                *
+ *                \__ \ / -_) | '  \  | '_ \ / _` | | '_| / -_)               *
+ *                |___/ \___| |_|_|_| | .__/ \__,_| |_|   \___|               *
+ *                                    |_|                                     *
+ ******************************************************************************
+ *                                                                            *
+ *                        Sempare Streams                                     *
+ *                                                                            *
+ *                                                                            *
+ *          https://www.github.com/sempare/sempare-streams                    *
+ ******************************************************************************
+ *                                                                            *
+ * Copyright (c) 2020 Sempare Limited,                                        *
+ *                    Conrad Vermeulen <conrad.vermeulen@gmail.com>           *
+ *                                                                            *
+ * Contact: info@sempare.ltd                                                  *
+ *                                                                            *
+ * Licensed under the GPL Version 3.0 or the Sempare Commercial License       *
+ * You may not use this file except in compliance with one of these Licenses. *
+ * You may obtain a copy of the Licenses at                                   *
+ *                                                                            *
+ * https://www.gnu.org/licenses/gpl-3.0.en.html                               *
+ * https://github.com/sempare/sempare-streams/tree/dev/docs/commercial.license.md *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the Licenses is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ *                                                                            *
+ ****************************************************************************%*)
+(*%****************************************************************************
+ *                 ___                                                        *
+ *                / __|  ___   _ __    _ __   __ _   _ _   ___                *
+ *                \__ \ / -_) | '  \  | '_ \ / _` | | '_| / -_)               *
+ *                |___/ \___| |_|_|_| | .__/ \__,_| |_|   \___|               *
+ *                                    |_|                                     *
+ ******************************************************************************
+ *                                                                            *
+ *                        Sempare Streams                                     *
+ *                                                                            *
+ *                                                                            *
+ *          https://www.github.com/sempare/sempare-streams                    *
+ ******************************************************************************
+ *                                                                            *
+ * Copyright (c) 2020 Sempare Limited,                                        *
+ *                    Conrad Vermeulen <conrad.vermeulen@gmail.com>           *
+ *                                                                            *
+ * Contact: info@sempare.ltd                                                  *
+ *                                                                            *
+ * Licensed under the GPL Version 3.0 or the Sempare Commercial License       *
+ * You may not use this file except in compliance with one of these Licenses. *
+ * You may obtain a copy of the Licenses at                                   *
+ *                                                                            *
+ * https://www.gnu.org/licenses/gpl-3.0.en.html                               *
+ * https://github.com/sempare/sempare-streams/tree/dev/docs/commercial.license.md *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the Licenses is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ *                                                                            *
+ ****************************************************************************%*)
 unit Sempare.Streams.Sort;
 
 interface
@@ -39,32 +105,32 @@ type
     property RttiField: TRttiField read GetField write SetField;
   end;
 
-  TSortFieldBase = class abstract(TInterfacedObject, IComparer<TValue>)
+  TBaseComparer = class abstract(TInterfacedObject, IComparer<TValue>)
   public
     function Compare(const A, B: TValue): integer; virtual; abstract;
   end;
 
-  TSortFieldString = class(TSortFieldBase)
+  TStringComparer = class(TBaseComparer)
   public
     function Compare(const A, B: TValue): integer; override;
   end;
 
-  TSortFieldInteger = class(TSortFieldBase)
+  TIntegerComparer = class(TBaseComparer)
   public
     function Compare(const A, B: TValue): integer; override;
   end;
 
-  TSortFieldDouble = class(TSortFieldBase)
+  TDoubleComparer = class(TBaseComparer)
   public
     function Compare(const A, B: TValue): integer; override;
   end;
 
-  TSortFieldBoolean = class(TSortFieldBase)
+  TBooleanComparer = class(TBaseComparer)
   public
     function Compare(const A, B: TValue): integer; override;
   end;
 
-  TSortFieldComposite<T> = class abstract(TInterfacedObject, IComparer<T>)
+  TClassOrRecordComparer<T> = class abstract(TInterfacedObject, IComparer<T>)
   strict protected
     FComparators: TArray<IComparer<TValue>>;
     FExtractors: TArray<IFieldExtractor>;
@@ -74,6 +140,15 @@ type
     constructor Create(AComparators: TArray<IComparer<TValue>>; AExprs: TArray<ISortExpr>; AExtractors: TArray<IFieldExtractor>); overload;
     destructor Destroy; override;
     function Compare(const A, B: T): integer;
+  end;
+
+  TReverseComparer<T> = class(TComparer<T>)
+  private
+    FComparer: IComparer<T>;
+  public
+    constructor Create(Comparer: IComparer<T>);
+    destructor Destroy; override;
+    function Compare(const Left, Right: T): integer; override;
   end;
 
 var
@@ -115,9 +190,9 @@ begin
   FField := Value;
 end;
 
-{ TSortFieldString }
+{ TStringComparer }
 
-function TSortFieldString.Compare(const A, B: TValue): integer;
+function TStringComparer.Compare(const A, B: TValue): integer;
 var
   avs, bvs: string;
 begin
@@ -131,9 +206,9 @@ begin
     result := 1;
 end;
 
-{ TSortFieldInteger }
+{ TIntegerComparer }
 
-function TSortFieldInteger.Compare(const A, B: TValue): integer;
+function TIntegerComparer.Compare(const A, B: TValue): integer;
 var
   avs, bvs: int64;
 begin
@@ -147,9 +222,9 @@ begin
     result := 1;
 end;
 
-{ TSortFieldDouble }
+{ TDoubleComparer }
 
-function TSortFieldDouble.Compare(const A, B: TValue): integer;
+function TDoubleComparer.Compare(const A, B: TValue): integer;
 var
   avs, bvs: double;
 begin
@@ -163,9 +238,9 @@ begin
     result := 1;
 end;
 
-{ TSortFieldBoolean }
+{ TBooleanComparer }
 
-function TSortFieldBoolean.Compare(const A, B: TValue): integer;
+function TBooleanComparer.Compare(const A, B: TValue): integer;
 var
   avs, bvs: boolean;
 begin
@@ -179,9 +254,9 @@ begin
     result := 1;
 end;
 
-{ TSortFieldComposite<T> }
+{ TClassOrRecordComparer<T> }
 
-function TSortFieldComposite<T>.Compare(const A, B: T): integer;
+function TClassOrRecordComparer<T>.Compare(const A, B: T): integer;
 var
   i, cv: integer;
   av, bv: TValue;
@@ -204,14 +279,14 @@ begin
   result := 0;
 end;
 
-constructor TSortFieldComposite<T>.Create(AComparators: TArray<IComparer<TValue>>; AExprs: TArray<ISortExpr>; AExtractors: TArray<IFieldExtractor>);
+constructor TClassOrRecordComparer<T>.Create(AComparators: TArray<IComparer<TValue>>; AExprs: TArray<ISortExpr>; AExtractors: TArray<IFieldExtractor>);
 begin
   FComparators := AComparators;
   FExtractors := AExtractors;
   FExprs := AExprs;
 end;
 
-constructor TSortFieldComposite<T>.Create(AExprs: TArray<ISortExpr>);
+constructor TClassOrRecordComparer<T>.Create(AExprs: TArray<ISortExpr>);
 var
   RttiType: TRttiType;
   Comparer: IComparer<TValue>;
@@ -239,17 +314,17 @@ begin
       tkFloat:
         Comparer := SortDouble;
     else
-      raise Exception.Create('type not supported');
+      raise EStream.Create('type not supported');
     end;
     insert(Comparer, comparators, length(comparators));
   end;
   if length(AExprs) = 0 then
-    raise Exception.Create('sort expressions expected');
+    raise EStream.Create('sort expressions expected');
 
   Create(comparators, AExprs, extractors)
 end;
 
-destructor TSortFieldComposite<T>.Destroy;
+destructor TClassOrRecordComparer<T>.Destroy;
 begin
   FComparators := nil;
   FExtractors := nil;
@@ -257,12 +332,30 @@ begin
   inherited;
 end;
 
+{ TReverseComparer<T> }
+
+function TReverseComparer<T>.Compare(const Left, Right: T): integer;
+begin
+  result := -FComparer.Compare(Left, Right);
+end;
+
+constructor TReverseComparer<T>.Create(Comparer: IComparer<T>);
+begin
+  FComparer := Comparer;
+end;
+
+destructor TReverseComparer<T>.Destroy;
+begin
+  FComparer := nil;
+  inherited;
+end;
+
 initialization
 
-SortString := TSortFieldString.Create();
-SortInt64 := TSortFieldInteger.Create();
-SortDouble := TSortFieldDouble.Create();
-SortBoolean := TSortFieldBoolean.Create();
+SortString := TStringComparer.Create();
+SortInt64 := TIntegerComparer.Create();
+SortDouble := TDoubleComparer.Create();
+SortBoolean := TBooleanComparer.Create();
 
 finalization
 
