@@ -131,6 +131,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="dbrtl.dcp"/>
         <DCCReference Include="src\Sempare.Streams.Expr.pas"/>
         <DCCReference Include="src\Sempare.Streams.Filter.pas"/>
         <DCCReference Include="src\Sempare.Streams.pas"/>

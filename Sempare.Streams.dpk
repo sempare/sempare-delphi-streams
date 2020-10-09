@@ -61,7 +61,8 @@ package Sempare.Streams;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl;
+  rtl,
+  dbrtl;
 
 contains
   Sempare.Streams.Expr in 'src\Sempare.Streams.Expr.pas',
@@ -73,3 +74,4 @@ contains
   Sempare.Streams.Enum in 'src\Sempare.Streams.Enum.pas';
 
 end.
+
