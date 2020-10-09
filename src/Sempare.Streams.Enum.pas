@@ -101,16 +101,17 @@ type
   /// <summary>
   /// TArrayEnum is an enumerator over an dynarray (TArray)
   /// </summary>
-  TArrayEnum<T> = class(THasMore<T>)
+  TArrayEnum<T> = class(THasMore<T>, IEnumCache<T>)
   private
     FData: TArray<T>;
     FOffset: integer;
-    // TODO: this should be identified as having a cache and be restartable
   public
     constructor Create(const AData: TArray<T>);
     function EOF: boolean; override;
     function Current: T; override;
     procedure Next; override;
+    function GetEnum: IEnum<T>;
+    function GetCache: TList<T>;
   end;
 
   /// <summary>
@@ -160,26 +161,27 @@ type
   /// <summary>
   /// TSortedEnum ensures items are sorted.
   /// </summary>
-  TSortedEnum<T> = class(TBaseEnum<T>)
+  TSortedEnum<T> = class(TBaseEnum<T>, IEnumCache<T>)
   private
     FItems: TList<T>;
-    // TODO: this should be identified as having a cache and be restartable
-
   public
     constructor Create(Enum: IEnum<T>; comparator: IComparer<T>);
     destructor Destroy; override;
+    function GetEnum: IEnum<T>;
+    function GetCache: TList<T>;
   end;
 
   /// <summary>
   /// TUniqueEnum ensures items are unique.
   /// </summary>
-  TUniqueEnum<T> = class(TBaseEnum<T>)
+  TUniqueEnum<T> = class(TBaseEnum<T>, IEnumCache<T>)
   private
     FItems: TList<T>;
-    // TODO: this should be identified as having a cache and be restartable
   public
     constructor Create(Enum: IEnum<T>; comparator: IComparer<T>);
     destructor Destroy; override;
+    function GetEnum: IEnum<T>;
+    function GetCache: TList<T>;
   end;
 
   /// <summary>
@@ -236,20 +238,6 @@ type
     constructor Create(const AValue: string);
     function EOF: boolean; override;
     function Current: char; override;
-    procedure Next; override;
-  end;
-
-  /// <summary>
-  /// TStringEnum allows us to enumerate a range of ints
-  /// </summary>
-  TBytesEnum = class(THasMore<byte>)
-  private
-    FValue: TArray<byte>;
-    FIdx, FEnd: Int64;
-  public
-    constructor Create(const AValue: TArray<byte>);
-    function EOF: boolean; override;
-    function Current: byte; override;
     procedure Next; override;
   end;
 
@@ -460,6 +448,16 @@ begin
   result := FOffset = length(FData);
 end;
 
+function TArrayEnum<T>.GetCache: TList<T>;
+begin
+  result := Stream.From<T>(FData).ToList;
+end;
+
+function TArrayEnum<T>.GetEnum: IEnum<T>;
+begin
+  result := TArrayEnum<T>.Create(FData);
+end;
+
 procedure TArrayEnum<T>.Next;
 begin
   if EOF then
@@ -502,7 +500,8 @@ end;
 constructor TBaseEnum<T>.Create(AEnum: IEnum<T>);
 begin
   inherited Create();
-  FEnum := AEnum;
+  if not Enum.TryGetCached<T>(AEnum, FEnum) then
+    FEnum := AEnum;
 end;
 
 function TBaseEnum<T>.Current: T;
@@ -615,7 +614,8 @@ end;
 constructor TMapEnum<TInput, TOutput>.Create(AEnum: IEnum<TInput>; AMapper: TMapFunction<TInput, TOutput>);
 begin
   inherited Create();
-  FEnum := AEnum;
+  if not Enum.TryGetCached<TInput>(AEnum, FEnum) then
+    FEnum := AEnum;
   FMapper := AMapper;
 end;
 
@@ -733,17 +733,25 @@ end;
 { Enum }
 
 class function Enum.ToArray<T>(AEnum: IEnum<T>): TArray<T>;
+var
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   setlength(result, 0);
-  while AEnum.HasMore do
-    insert(AEnum.Current, result, length(result));
+  while e.HasMore do
+    insert(e.Current, result, length(result));
 end;
 
 class function Enum.ToList<T>(AEnum: IEnum<T>): TList<T>;
+var
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   result := TList<T>.Create;
-  while AEnum.HasMore do
-    result.Add(AEnum.Current);
+  while e.HasMore do
+    result.Add(e.Current);
 end;
 
 class function Enum.TryGetCached<T>(AEnum: IEnum<T>; out ACachedEnum: IEnum<T>): boolean;
@@ -762,10 +770,13 @@ end;
 class procedure Enum.Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyFunction<T>);
 var
   v: T;
+  e: IEnum<T>;
 begin
-  while AEnum.HasMore do
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
   begin
-    v := AEnum.Current;
+    v := e.Current;
     AFunc(v);
   end;
 end;
@@ -785,9 +796,13 @@ begin
 end;
 
 class function Enum.Count<T>(AEnum: IEnum<T>): integer;
+var
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   result := 0;
-  while AEnum.HasMore do
+  while e.HasMore do
     inc(result);
 end;
 
@@ -796,12 +811,15 @@ var
   extractor: IFieldExtractor;
   valueT: T;
   val, keyVal: TValue;
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   result := TDictionary<TKeyType, TValueType>.Create();
   extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
-  while AEnum.HasMore do
+  while e.HasMore do
   begin
-    valueT := AEnum.Current;
+    valueT := e.Current;
     val := TValue.From<T>(valueT);
     extractor.GetValue(val, keyVal);
     result.AddOrSetValue(keyVal.AsType<TKeyType>(), AFunction(valueT));
@@ -824,12 +842,15 @@ var
   val, keyVal: TValue;
   lst: TArray<TValueType>;
   key: TKeyType;
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   result := TDictionary < TKeyType, TArray < TValueType >>.Create();
   extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
-  while AEnum.HasMore do
+  while e.HasMore do
   begin
-    valueT := AEnum.Current;
+    valueT := e.Current;
     val := TValue.From<T>(valueT);
     if not extractor.GetValue(val, keyVal) then
       raise EStream.CreateFmt('Key ''%s'' not found', [AField.Field]);
@@ -863,12 +884,15 @@ var
   val, keyVal: TValue;
   lst: TList<TValueType>;
   key: TKeyType;
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   result := TDictionary < TKeyType, TList < TValueType >>.Create();
   extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
-  while AEnum.HasMore do
+  while e.HasMore do
   begin
-    valueT := AEnum.Current;
+    valueT := e.Current;
     val := TValue.From<T>(valueT);
     if not extractor.GetValue(val, keyVal) then
       raise EStream.CreateFmt('Key ''%s'' not found', [AField.Field]);
@@ -900,10 +924,14 @@ begin
 end;
 
 class function Enum.Map<T, TOutput>(AEnum: IEnum<T>; const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>;
+var
+  e: IEnum<T>;
 begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
   setlength(result, 0);
-  while AEnum.HasMore do
-    insert(AFunction(AEnum.Current), result, length(result));
+  while e.HasMore do
+    insert(AFunction(e.Current), result, length(result));
 end;
 
 class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean;
@@ -1028,6 +1056,16 @@ destructor TSortedEnum<T>.Destroy;
 begin
   FItems.Free;
   inherited;
+end;
+
+function TSortedEnum<T>.GetCache: TList<T>;
+begin
+  result := FItems;
+end;
+
+function TSortedEnum<T>.GetEnum: IEnum<T>;
+begin
+  result := TTEnumerableEnum<T>.Create(FItems);
 end;
 
 { TJoinEnum<TLeft, TRight, TJoined> }
@@ -1253,6 +1291,16 @@ begin
   inherited;
 end;
 
+function TUniqueEnum<T>.GetCache: TList<T>;
+begin
+  result := FItems;
+end;
+
+function TUniqueEnum<T>.GetEnum: IEnum<T>;
+begin
+  result := TTEnumerableEnum<T>.Create(FItems);
+end;
+
 { TDataSetEnumClass<T> }
 
 constructor TDataSetEnumClass<T>.Create(const ADataSet: TDataSet);
@@ -1438,30 +1486,6 @@ begin
 end;
 
 procedure TStringEnum.Next;
-begin
-  inc(FIdx);
-end;
-
-{ TBytesEnum }
-
-constructor TBytesEnum.Create(const AValue: TArray<byte>);
-begin
-  FValue := AValue;
-  FIdx := 0;
-  FEnd := length(AValue) - 1;
-end;
-
-function TBytesEnum.Current: byte;
-begin
-  result := FValue[FIdx];
-end;
-
-function TBytesEnum.EOF: boolean;
-begin
-  result := FIdx > FEnd;
-end;
-
-procedure TBytesEnum.Next;
 begin
   inc(FIdx);
 end;

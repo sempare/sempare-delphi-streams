@@ -15,8 +15,6 @@ Open Source: https://github.com/sempare/sempare-streams
 The objective is to provide a Java streams / Linq like interface for Delphi leveraging record operators so that query expressions can look quite natural and
 be more functional with less side effects.
 
-The current implementation is incremental in supporting features and is not focused on performance/optimisation yet.
-
 Features include:
 - enumerating IEnumerable, TEnumerable, lists, dynamic arrays, TDataSet descendents
 - enumerating int and floating ranges, strings and bytes
@@ -25,7 +23,9 @@ Features include:
 - mapping one type to another type
 - applying procedures to elements
 - sorting
+- unique or distinct elements in a stream
 - inner, left, right and full joins
+- caching intermediate results
 
 
 # How to use:
@@ -35,11 +35,12 @@ uses
     Sempare.Streams;
 ```
 
-
 The main entry point is the _Stream_ record, where we stream from:
 * a list : <b>TList&lt;T&gt;</b>
 * a dynamic array : <b>TArray&lt;T&gt;</b>
 * a enumerable : <b>TEnumerable&lt;T&gt;</b> or <b>IEnumerable&lt;T&gt;</b>
+* a descendant of TDataSet
+* a string
 
 # Sample usage
 
@@ -184,7 +185,7 @@ var arr := Stream.From<TPerson>(Fpeople)
   .skip(1).take(2).Count();
 ```
 
-### Update
+### Update/Apply
 
 This is how you can apply a procedure to each of the items in the stream.
 
@@ -193,11 +194,15 @@ This is how you can apply a procedure to each of the items in the stream.
 var arr := Stream.From<TPerson>(Fpeople)
   .Map((person.firstname = 'john') or (person.number = 1.2))
   .skip(1).take(2)
-  .Apply(procedure (const AValue : TPerson)
+  .Apply(procedure (var AValue : TPerson)
   	begin
   		result.name := 'hello ' + avalue.name;
   	end);
 ```
+
+NOTE: parameter is normally const, but for records would want to use const[ref]. Using var as it is a bit easier to type, but
+notice that any changes to AVAlue itself will not change anything on the stream. The method is intended to allow you to manipulate
+fields and properties on classes. 
 
 ### Joins (inner, left, right and full)
 
@@ -224,6 +229,17 @@ To summarise the joins:
 - Perform an right join on two streams, where items if second stream are returned, optionally matching items in the first stream.
 - Performing a full join is a union of left and right joins on the streams.
 
+## Union
+
+Two streams of the same type can be joined (or unioned):
+```
+  Assert.IsTrue( 
+    stream.From<integer>([1, 2, 3, 4, 5, 6]) 
+    .Equals(
+        stream.From<integer>([1, 2, 3]).union(stream.From<integer>([4, 5, 6])
+    )));
+```
+
 ## Unique
 
 Creates a unique stream of items.
@@ -235,6 +251,8 @@ Creates a unique stream of items.
   Assert.AreEqual(6, Stream.From<integer>([5, 4, 2, 7, 3, 3, 2, 7, 1]).Unique.Count);
 
 ```
+
+If you prefer SQL dialect, you can use the alias Distinct() rather than Unique().
 
 ## Range
 
@@ -284,6 +302,24 @@ Essencially, you will have something that descends from TDataSet. For streams, y
 2. Create a metadata class that maps onto the record or class.
 3. use Stream.ReflectMetadata<meta, t>() as shown above in other examples.
 4. use the Stream.From<T>(dataset)
+	
+## Caching results
+
+A Cache() operation is allowed when you may want to make a 'checkpoint' so you can performa a number of operations without  having
+to redo previous actions.
+
+e.g.
+```
+  // snapshot values 1..100
+	var cached := stream.Range(1,100).Cache();
+	// count the values
+	var count := cached.Count();
+	// start enumerating again on the cache
+	var arrCount := cached.Filter(function (const AValue : int64) : boolean 
+									begin
+										result := avalue mod 2 = 0;
+									end).Count();
+```
 
 ## Optimising your queries
 
@@ -294,7 +330,7 @@ Using the Cache() you can create a temporary snapshot in order to use other stre
 
 ## Memory management
 
-As mentioned in Map(), you need to remember that you are responsible for any memory allocation during Map() or Apply(), or other function/procedure calls.
+As mentioned in the discussion on Map() - you need to remember that you are responsible for any memory allocation during Map() or Apply(), or other function/procedure calls.
 
 The implementation has used Delphi interfaces to free up any resources automatically so you can focus
 on your own resources.

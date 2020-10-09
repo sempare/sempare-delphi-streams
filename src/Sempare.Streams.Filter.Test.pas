@@ -80,7 +80,6 @@ type
     procedure TestFilterBoolean;
     [Test]
     procedure TestFilterDouble;
-
   end;
 
 implementation

@@ -80,6 +80,11 @@ type
 
     [Test]
     procedure TestDataSetEnumRecord;
+
+    [Test]
+    procedure TestUnionEnum;
+    [Test]
+    procedure TestCache;
   end;
 
 type
@@ -436,6 +441,29 @@ begin
   end;
 end;
 
+procedure TStreamEnumTest.TestUnionEnum;
+begin
+  Assert.IsTrue( //
+    stream.From<integer>([1, 2, 3, 4, 5, 6]) //
+    .Equals(stream.From<integer>([1, 2, 3]) //
+    .union(stream.From<integer>([4, 5, 6]))));
+end;
+
+procedure TStreamEnumTest.TestCache;
+var
+  cached: TStreamOperation<int64>;
+  Count, arrcount: int64;
+begin
+  cached := stream.Range(1, 100).Cache();
+  Count := cached.Count();
+  arrcount := cached.Filter(
+    function(const avalue: int64): boolean
+    begin
+      result := avalue mod 2 = 0;
+    end).Count();
+  Assert.AreEqual(100, integer(Count));
+  Assert.AreEqual(50, integer(arrcount));
+end;
 { TInt }
 
 constructor TInt.Create(const avalue: integer);

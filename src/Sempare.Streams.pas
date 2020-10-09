@@ -195,6 +195,16 @@ type
     function Unique(AComparator: IComparer<T>): TStreamOperation<T>; overload;
 
     /// <summary>
+    /// Distinct using the default comparator (Distinct is an alias for Unique)
+    /// <summary>
+    function Distinct(): TStreamOperation<T>; overload; inline;
+
+    /// <summary>
+    /// Distinct using a custom comparator  (Distinct is an alias for Unique)
+    /// <summary>
+    function Distinct(AComparator: IComparer<T>): TStreamOperation<T>; overload; inline;
+
+    /// <summary>
     /// SortBy sorts the stream using a sort expression. The elements must be a class or record.
     /// <summary>
     function SortBy(const AExpr: TSortExpression): TStreamOperation<T>;
@@ -251,6 +261,11 @@ type
     procedure Apply(const AFunction: TApplyFunction<T>);
 
     /// <summary>
+    /// Update applies a procedure to the items in the stream. (Update is an alias for Apply);
+    /// <summary>
+    procedure Update(const AFunction: TApplyFunction<T>); inline;
+
+    /// <summary>
     /// Creates a cache of the items at this point so that the items can be enumerated again
     /// without having to reapply any transformations.
     /// <summary>
@@ -279,6 +294,11 @@ type
     /// <summary>
     function FullJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
       : TStreamOperation<TJoined>;
+
+    /// <summary>
+    /// Union with another stream so the results appear as one.
+    /// <summary>
+    function Union(const [ref] AOther: TStreamOperation<T>): TStreamOperation<T>;
 
     /// <summary>
     /// Filters items in the stream based on filter critera. The items should be a record or a class.
@@ -398,13 +418,6 @@ type
     /// <param name="ASource">A source of type string.</param>
     /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TArray source.</returns>;
     class function From(const ASource: string): TStreamOperation<char>; overload; static;
-
-    /// <summary>
-    /// Stream over bytes in TBytes
-    /// </summary>
-    /// <param name="ASource">A source of type TBytes.</param>
-    /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TBytes source.</returns>;
-    class function From(const ASource: tbytes): TStreamOperation<byte>; overload; static;
 
     /// <summary>
     /// Stream ints over a range
@@ -747,6 +760,16 @@ begin
   result := Enum.Count<T>(FEnum);
 end;
 
+function TStreamOperation<T>.Distinct(AComparator: IComparer<T>): TStreamOperation<T>;
+begin
+  result := Unique(AComparator);
+end;
+
+function TStreamOperation<T>.Distinct: TStreamOperation<T>;
+begin
+  result := Distinct;
+end;
+
 function TStreamOperation<T>.Equals(const [ref] AOther: TStreamOperation<T>): boolean;
 begin
   result := Enum.AreEqual<T>(FEnum, AOther.FEnum);
@@ -907,9 +930,19 @@ begin
   result := Enum.ToList<T>(FEnum);
 end;
 
+function TStreamOperation<T>.Union(const [ref] AOther: TStreamOperation<T>): TStreamOperation<T>;
+begin
+  result := TUnionEnum<T>.Create([Self.FEnum, AOther.FEnum]);
+end;
+
 function TStreamOperation<T>.Unique(AComparator: IComparer<T>): TStreamOperation<T>;
 begin
   result := TUniqueEnum<T>.Create(FEnum, AComparator); //
+end;
+
+procedure TStreamOperation<T>.Update(const AFunction: TApplyFunction<T>);
+begin
+  Apply(AFunction);
 end;
 
 function TStreamOperation<T>.Where(const ACondition: TFilterFunction<T>): TStreamOperation<T>;
@@ -975,11 +1008,6 @@ begin
   else
     raise EStreamReflect.Create('Type must a a record or a class');
   end;
-end;
-
-class function Stream.From(const ASource: tbytes): TStreamOperation<byte>;
-begin
-  result := TBytesEnum.Create(ASource);
 end;
 
 class function Stream.From(const ASource: string): TStreamOperation<char>;

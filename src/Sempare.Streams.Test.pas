@@ -381,7 +381,7 @@ var
   a, b: tarray<byte>;
 begin
   b := [1, 2, 3, 4];
-  a := Stream.From(b).toArray();
+  a := Stream.From<byte>(b).toArray();
   Assert.IsTrue(Stream.From<byte>(b).Equals(Stream.From<byte>(a)));
 end;
 

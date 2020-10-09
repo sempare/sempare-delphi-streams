@@ -52,6 +52,10 @@ type
   TJoinOnFunction<T, TOther> = reference to function(const A: T; const B: TOther): boolean;
   TJoinSelectFunction<T, TOther, TJoined> = reference to function(const A: T; const B: TOther): TJoined;
   TMapFunction<TInput, TOutput> = reference to function(const AInput: TInput): TOutput;
+
+  // AInput is var rather than const [ref] to simplify what developers have to type.
+  // It is a minor optimisation when records are used. Note that
+  // you can change values in AInput, but changes to AInput itself will have no result.
   TApplyFunction<TInput> = reference to procedure(var AInput: TInput);
   FValueFilter = reference to function(const AValue: TValue): boolean;
 
