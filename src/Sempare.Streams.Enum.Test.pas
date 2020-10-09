@@ -36,6 +36,7 @@ unit Sempare.Streams.Enum.Test;
 interface
 
 uses
+  Sempare.Streams,
   System.Generics.Collections,
   System.SysUtils,
   Sempare.Streams.Enum,
@@ -74,13 +75,58 @@ type
     [Test]
     procedure TestApplyEnum;
 
+    [Test]
+    procedure TestDataSetEnum;
+
+    [Test]
+    procedure TestDataSetEnumRecord;
+  end;
+
+type
+  TPersonDataSet = class
+  public
+    [StreamField('name')]
+    FName: string;
+    [StreamField('age')]
+    fage: integer;
+    [StreamField('weight')]
+    fweight: double;
+    [StreamField('dob')]
+    fdob: tdatetime;
+  end;
+
+  TPersonDataSetMeta = record [StreamField('fname')]
+    Name: TFieldExpression;
+    [StreamField('fage')]
+    Age: TFieldExpression;
+    [StreamField('fweight')]
+    Weight: TFieldExpression;
+    [StreamField('fdob')]
+    DoB: TFieldExpression;
+  end;
+
+  TPersonDataSetRecord = record
+  public
+    Name: string;
+    Age: integer;
+    Weight: double;
+    DoB: tdatetime;
+  end;
+
+  TPersonDataSetMetaRecord = record
+    Name: TFieldExpression;
+    Age: TFieldExpression;
+    Weight: TFieldExpression;
+    DoB: TFieldExpression;
   end;
 
 implementation
 
 uses
+  Data.DB,
+  FireDAC.Comp.Client,
   System.classes,
-  Sempare.Streams,
+
   Sempare.Streams.Types;
 
 { TStreamEnumTest }
@@ -171,6 +217,88 @@ begin
       Assert.AreEqual(a[i], l[i]);
   finally
     l.Free;
+  end;
+end;
+
+function CreateMockUsersTable(): TFDMemTable;
+var
+  ds: TFDMemTable;
+begin
+  ds := TFDMemTable.Create(nil);
+  with ds do
+  begin
+    FieldDefs.Add('name', ftWideString, 20);
+    FieldDefs.Add('age', ftInteger);
+    FieldDefs.Add('weight', ftFloat);
+    FieldDefs.Add('dob', ftDateTime);
+    CreateDataSet;
+  end;
+  with ds do
+  begin
+    Append;
+    FieldByName('name').value := 'joe';
+    FieldByName('age').value := 5;
+    FieldByName('weight').value := 15;
+    FieldByName('dob').value := EncodeDate(2015, 6, 30);
+    Post;
+    Append;
+    FieldByName('name').value := 'pete';
+    FieldByName('age').value := 6;
+    FieldByName('weight').value := 20;
+    FieldByName('dob').value := EncodeDate(2014, 5, 30);
+    Post;
+    Append;
+    FieldByName('name').value := 'jane';
+    FieldByName('age').value := 7;
+    FieldByName('weight').value := 25;
+    FieldByName('dob').value := EncodeDate(2013, 5, 30);
+    Post;
+  end;
+  result := ds;
+end;
+
+procedure TStreamEnumTest.TestDataSetEnum;
+var
+  ds: TFDMemTable;
+  person: TPersonDataSetMeta;
+  result: TArray<TPersonDataSet>;
+  p: TPersonDataSet;
+begin
+  ds := CreateMockUsersTable();
+  try
+    person := stream.ReflectMetadata<TPersonDataSetMeta, TPersonDataSet>;
+    result := stream.From<TPersonDataSet>(ds).ToArray();
+
+    Assert.AreEqual('joe', result[0].FName);
+    Assert.AreEqual('pete', result[1].FName);
+    Assert.AreEqual('jane', result[2].FName);
+
+    for p in result do
+      p.Free;
+    result := nil;
+  finally
+    ds.Free;
+  end;
+end;
+
+procedure TStreamEnumTest.TestDataSetEnumRecord;
+var
+  ds: TFDMemTable;
+  person: TPersonDataSetMetaRecord;
+  result: TArray<TPersonDataSetRecord>;
+begin
+  ds := CreateMockUsersTable();
+  try
+    person := stream.ReflectMetadata<TPersonDataSetMetaRecord, TPersonDataSetRecord>;
+    result := stream.From<TPersonDataSetRecord>(ds).ToArray();
+
+    Assert.AreEqual('joe', result[0].Name);
+    Assert.AreEqual('pete', result[1].Name);
+    Assert.AreEqual('jane', result[2].Name);
+
+    result := nil;
+  finally
+    ds.Free;
   end;
 end;
 

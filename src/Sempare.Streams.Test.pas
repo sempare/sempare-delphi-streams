@@ -113,6 +113,18 @@ type
     [Test]
     procedure TestGroupBy;
 
+    [Test]
+    procedure TestRangeInt;
+
+    [Test]
+    procedure TestRangeFloat;
+
+    [Test]
+    procedure TestString;
+
+    [Test]
+    procedure TestBytes;
+
   end;
 
 implementation
@@ -338,6 +350,39 @@ begin
   finally
     people.Free;
   end;
+end;
+
+procedure TStreamTest.TestRangeInt;
+var
+  a: tarray<int64>;
+begin
+  a := Stream.Range(1, 5).toArray();
+  Assert.IsTrue(Stream.From<int64>([1, 2, 3, 4, 5]).Equals(Stream.From<int64>(a)));
+end;
+
+procedure TStreamTest.TestRangeFloat;
+var
+  a: tarray<extended>;
+begin
+  a := Stream.Range(0, 5, 1.5).toArray();
+  Assert.IsTrue(Stream.From<extended>([0, 1.5, 3, 4.5]).Equals(Stream.From<extended>(a)));
+end;
+
+procedure TStreamTest.TestString;
+var
+  a: tarray<char>;
+begin
+  a := Stream.From('abcdef').toArray();
+  Assert.IsTrue(Stream.From<char>(['a', 'b', 'c', 'd', 'e', 'f']).Equals(Stream.From<char>(a)));
+end;
+
+procedure TStreamTest.TestBytes;
+var
+  a, b: tarray<byte>;
+begin
+  b := [1, 2, 3, 4];
+  a := Stream.From(b).toArray();
+  Assert.IsTrue(Stream.From<byte>(b).Equals(Stream.From<byte>(a)));
 end;
 
 { TAddr }

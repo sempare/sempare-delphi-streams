@@ -36,6 +36,8 @@ unit Sempare.Streams.Enum;
 interface
 
 uses
+  Data.DB,
+  System.Rtti,
   System.Generics.Defaults,
   System.Generics.Collections,
   Sempare.Streams.Types,
@@ -196,6 +198,62 @@ type
   end;
 
   /// <summary>
+  /// TIntRange allows us to enumerate a range of ints
+  /// </summary>
+  TIntRangeEnum = class(THasMore<Int64>)
+  private
+    FIdx: Int64;
+    FEnd, FDelta: Int64;
+  public
+    constructor Create(const AStart, AEnd: Int64; const ADelta: Int64 = 1);
+    function EOF: boolean; override;
+    function Current: Int64; override;
+    procedure Next; override;
+  end;
+
+  /// <summary>
+  /// TFloatRange allows us to enumerate a range of ints
+  /// </summary>
+  TFloatRangeEnum = class(THasMore<extended>)
+  private
+    FIdx: extended;
+    FEnd, FDelta: extended;
+  public
+    constructor Create(const AStart, AEnd: extended; const ADelta: extended = 1);
+    function EOF: boolean; override;
+    function Current: extended; override;
+    procedure Next; override;
+  end;
+
+  /// <summary>
+  /// TStringEnum allows us to enumerate a range of ints
+  /// </summary>
+  TStringEnum = class(THasMore<char>)
+  private
+    FValue: string;
+    FIdx, FEnd: Int64;
+  public
+    constructor Create(const AValue: string);
+    function EOF: boolean; override;
+    function Current: char; override;
+    procedure Next; override;
+  end;
+
+  /// <summary>
+  /// TStringEnum allows us to enumerate a range of ints
+  /// </summary>
+  TBytesEnum = class(THasMore<byte>)
+  private
+    FValue: TArray<byte>;
+    FIdx, FEnd: Int64;
+  public
+    constructor Create(const AValue: TArray<byte>);
+    function EOF: boolean; override;
+    function Current: byte; override;
+    procedure Next; override;
+  end;
+
+  /// <summary>
   /// TFilterEnum only returns items that for which the filter functions returns true.
   /// </summary>
   TFilterEnum<T> = class(TBaseEnum<T>)
@@ -343,11 +401,45 @@ type
     procedure Next; override;
   end;
 
+  /// <summary>
+  /// TDataSetEnum enumerates a dataset with results into a managed type of T.
+  /// </summary>
+  TDataSetEnumRecord<T> = class(THasMore<T>)
+  private
+    FDataSet: TDataSet;
+    FFields: TDictionary<string, string>;
+    FRttiType: TRttiType;
+  public
+    constructor Create(const ADataSet: TDataSet);
+    destructor Destroy; override;
+    function Current: T; override;
+    function EOF: boolean; override;
+    procedure Next; override;
+  end;
+
+  /// <summary>
+  /// TDataSetEnum enumerates a dataset with results into a class of type T.
+  /// </summary>
+  TDataSetEnumClass<T> = class(THasMore<T>)
+  private
+    FDataSet: TDataSet;
+    FConstructor: TRttiMethod;
+    FFields: TDictionary<string, string>;
+    FRttiType: TRttiType;
+  public
+    constructor Create(const ADataSet: TDataSet);
+    destructor Destroy; override;
+    function Current: T; override;
+    function EOF: boolean; override;
+    procedure Next; override;
+  end;
+
 implementation
 
 uses
   System.SysUtils,
-  System.Rtti,
+
+  Sempare.Streams,
   Sempare.Streams.Rtti;
 
 { TArrayEnum<T> }
@@ -1159,6 +1251,219 @@ destructor TUniqueEnum<T>.Destroy;
 begin
   FItems.Free;
   inherited;
+end;
+
+{ TDataSetEnumClass<T> }
+
+constructor TDataSetEnumClass<T>.Create(const ADataSet: TDataSet);
+var
+  attrib: TCustomAttribute;
+  Field: trttifield;
+  fieldname: string;
+begin
+  FDataSet := ADataSet;
+  FDataSet.First;
+  FFields := TDictionary<string, string>.Create;
+
+  FRttiType := rttictx.gettype(typeinfo(T));
+  FConstructor := FRttiType.GetMethod('Create');
+  for Field in FRttiType.GetFields do
+  begin
+    fieldname := Field.Name;
+    for attrib in Field.GetAttributes do
+    begin
+      if attrib is StreamFieldAttribute then
+      begin
+        fieldname := StreamFieldAttribute(attrib).Name;
+        break;
+      end;
+    end;
+    FFields.AddOrSetValue(Field.Name, fieldname);
+  end;
+
+end;
+
+function TDataSetEnumClass<T>.Current: T;
+var
+  Field: trttifield;
+  obj: TObject;
+begin
+  obj := FConstructor.Invoke(FRttiType.AsInstance.MetaclassType, []).AsObject;
+  move(obj, result, sizeof(T)); // this is a hack
+  for Field in FRttiType.GetFields do
+  begin
+    Field.SetValue(obj, TValue.fromVariant(FDataSet.FieldByName(FFields[Field.Name]).AsVariant));
+  end;
+end;
+
+destructor TDataSetEnumClass<T>.Destroy;
+begin
+  FFields.Free;
+  inherited;
+end;
+
+function TDataSetEnumClass<T>.EOF: boolean;
+begin
+  result := FDataSet.EOF;
+end;
+
+procedure TDataSetEnumClass<T>.Next;
+begin
+  FDataSet.Next;
+end;
+
+{ TDataSetEnumRecord<T> }
+
+constructor TDataSetEnumRecord<T>.Create(const ADataSet: TDataSet);
+var
+  attrib: TCustomAttribute;
+  Field: trttifield;
+  fieldname: string;
+begin
+  FDataSet := ADataSet;
+  FDataSet.First;
+  FFields := TDictionary<string, string>.Create;
+
+  FRttiType := rttictx.gettype(typeinfo(T));
+  for Field in FRttiType.GetFields do
+  begin
+    fieldname := Field.Name;
+    for attrib in Field.GetAttributes do
+    begin
+      if attrib is StreamFieldAttribute then
+      begin
+        fieldname := StreamFieldAttribute(attrib).Name;
+        break;
+      end;
+    end;
+    FFields.AddOrSetValue(Field.Name, fieldname);
+  end;
+
+end;
+
+function TDataSetEnumRecord<T>.Current: T;
+var
+  Field: trttifield;
+
+begin
+  fillchar(result, sizeof(T), 0);
+  for Field in FRttiType.GetFields do
+  begin
+    Field.SetValue(@result, TValue.fromVariant(FDataSet.FieldByName(FFields[Field.Name]).AsVariant));
+  end;
+end;
+
+destructor TDataSetEnumRecord<T>.Destroy;
+begin
+  FFields.Free;
+  inherited;
+end;
+
+function TDataSetEnumRecord<T>.EOF: boolean;
+begin
+  result := FDataSet.EOF;
+end;
+
+procedure TDataSetEnumRecord<T>.Next;
+begin
+  FDataSet.Next;
+end;
+
+{ TIntRange }
+
+constructor TIntRangeEnum.Create(const AStart, AEnd: Int64; const ADelta: Int64);
+begin
+  inherited Create();
+  FIdx := AStart;
+  FEnd := AEnd;
+  FDelta := ADelta;
+end;
+
+function TIntRangeEnum.Current: Int64;
+begin
+  result := FIdx;
+end;
+
+function TIntRangeEnum.EOF: boolean;
+begin
+  result := FIdx > FEnd;
+end;
+
+procedure TIntRangeEnum.Next;
+begin
+  inc(FIdx);
+end;
+
+{ TFloatRange }
+
+constructor TFloatRangeEnum.Create(const AStart, AEnd, ADelta: extended);
+begin
+  FIdx := AStart;
+  FEnd := AEnd;
+  FDelta := ADelta;
+end;
+
+function TFloatRangeEnum.Current: extended;
+begin
+  result := FIdx;
+end;
+
+function TFloatRangeEnum.EOF: boolean;
+begin
+  result := FIdx > FEnd;
+end;
+
+procedure TFloatRangeEnum.Next;
+begin
+  FIdx := FIdx + FDelta;
+end;
+
+{ TStringEnum }
+
+constructor TStringEnum.Create(const AValue: string);
+begin
+  FValue := AValue;
+  FIdx := 1;
+  FEnd := length(AValue);
+end;
+
+function TStringEnum.Current: char;
+begin
+  result := FValue[FIdx];
+end;
+
+function TStringEnum.EOF: boolean;
+begin
+  result := FIdx > FEnd;
+end;
+
+procedure TStringEnum.Next;
+begin
+  inc(FIdx);
+end;
+
+{ TBytesEnum }
+
+constructor TBytesEnum.Create(const AValue: TArray<byte>);
+begin
+  FValue := AValue;
+  FIdx := 0;
+  FEnd := length(AValue) - 1;
+end;
+
+function TBytesEnum.Current: byte;
+begin
+  result := FValue[FIdx];
+end;
+
+function TBytesEnum.EOF: boolean;
+begin
+  result := FIdx > FEnd;
+end;
+
+procedure TBytesEnum.Next;
+begin
+  inc(FIdx);
 end;
 
 end.

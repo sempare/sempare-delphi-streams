@@ -12,12 +12,14 @@ Open Source: https://github.com/sempare/sempare-streams
 
 # Description
 
-The objective is to provide a Java streams / Linq like interface for Delphi leveraging record operators so that query expressions can look quite natural and 
-be more functional with less side effects. 
+The objective is to provide a Java streams / Linq like interface for Delphi leveraging record operators so that query expressions can look quite natural and
+be more functional with less side effects.
 
 The current implementation is incremental in supporting features and is not focused on performance/optimisation yet.
 
 Features include:
+- enumerating IEnumerable, TEnumerable, lists, dynamic arrays, TDataSet descendents
+- enumerating int and floating ranges, strings and bytes
 - counting elements
 - grouping
 - mapping one type to another type
@@ -44,7 +46,7 @@ The main entry point is the _Stream_ record, where we stream from:
 Have a look at some of the [tests](./src/Sempare.Streams.Test.pas).
 
 With the following structure:
-``` 
+```
 type
   TAddr = record
     id: integer;
@@ -70,7 +72,7 @@ type
     FirstName: TFieldExpression;
     Age: TFieldExpression;
   end;
-  
+
 var
   people : TList<TPerson>;
   Person : TPersonMeta;
@@ -79,8 +81,8 @@ var
 
 The <b>Stream</b> operations should be able to take place on records, classes and primitive types.
 
-TPersonMeta is a metadata record and should only contain fields of TFieldExpression that map onto the fields in TPerson. Metadata records are used to reference fields in queries. 
-The StreamField attribute can be used if an alternative name should be used. The example above illustrates how 'firstname' in the metadata record would map onto 'name' in the TPerson record, 
+TPersonMeta is a metadata record and should only contain fields of TFieldExpression that map onto the fields in TPerson. Metadata records are used to reference fields in queries.
+The StreamField attribute can be used if an alternative name should be used. The example above illustrates how 'firstname' in the metadata record would map onto 'name' in the TPerson record,
 but it could also be used in the common scenario where properties are F prefixed. e.g. there may be a private 'FName', where the metadata would use 'name'.
 
 ### Initialise metadata
@@ -108,8 +110,8 @@ You could also break it up as follows:
 var expr : TExpression := person.firstname = 'john';
 if someConditionIsTrue then
    expr := expr and (person.value = 15);
-   
-john15 := Stream.From<TPerson>(people).Filter(expr).TakeOne();   
+
+john15 := Stream.From<TPerson>(people).Filter(expr).TakeOne();
 ```
 
 ### To Array or List
@@ -127,7 +129,7 @@ var total := Stream.From<TPerson>(Fpeople).Filter((person.number >= 1.3) and (pe
 ```
 
 ### Dereferencing fields:
-It may be useful to still use the field() function that can allow for nested fields to be queried easily. 
+It may be useful to still use the field() function that can allow for nested fields to be queried easily.
 This is a shortcoming until the Metadata can support nested metadata as well, but will be addressed in future.
 
 ```
@@ -136,8 +138,8 @@ var dereferencedFields := Stream.From<TPerson>(Fpeople).Filter((field('addr.zip'
 
 ### Sorting:
 
-Use SortBy() to sort on classes or records. Use Sort() if you want to use traditional ICompare comparators, 
-which can work on any type. 
+Use SortBy() to sort on classes or records. Use Sort() if you want to use traditional ICompare comparators,
+which can work on any type.
 
 ```
 // sorting in a single expression
@@ -147,7 +149,7 @@ var arr := Stream.From<TPerson>(Fpeople).SortBy(field('sugar', asc) and field('n
 // build up a sort expression
 var sortExpr : TSortExpression = field('sugar', asc);
 if someConditionIsTrue then
-   sortExpr := sortExpr and field('name', asc); 
+   sortExpr := sortExpr and field('name', asc);
 
 arr := Stream.From<TPerson>(Fpeople).SortBy(sortExpr).ToArray();
 ```
@@ -156,9 +158,9 @@ arr := Stream.From<TPerson>(Fpeople).SortBy(sortExpr).ToArray();
 Using skip() and take() you can select how many records you want to receive.
 
 ```
-var arr := Stream.From<TPerson>(Fpeople) 
-  .Filter((person.firstname = 'john') or (person.number = 1.2)) 
-  .skip(1).take(2).Count(); 
+var arr := Stream.From<TPerson>(Fpeople)
+  .Filter((person.firstname = 'john') or (person.number = 1.2))
+  .skip(1).take(2).Count();
 ```
 
 ### Map
@@ -172,14 +174,14 @@ type
   TName = record
     Name : string;
   end;
-	
+
 var arr := Stream.From<TPerson>(Fpeople)
-  .Filter((person.firstname = 'john') or (person.number = 1.2)) 
-  .Map<TName>(function(const AValue : TPerson):TName 
+  .Filter((person.firstname = 'john') or (person.number = 1.2))
+  .Map<TName>(function(const AValue : TPerson):TName
   	begin
   		result.name := avalue.name;
   	end)
-  .skip(1).take(2).Count(); 
+  .skip(1).take(2).Count();
 ```
 
 ### Update
@@ -187,14 +189,14 @@ var arr := Stream.From<TPerson>(Fpeople)
 This is how you can apply a procedure to each of the items in the stream.
 
 ```
-	
-var arr := Stream.From<TPerson>(Fpeople) 
-  .Map((person.firstname = 'john') or (person.number = 1.2)) 
-  .skip(1).take(2) 
-  .Apply(procedure (const AValue : TPerson) 
+
+var arr := Stream.From<TPerson>(Fpeople)
+  .Map((person.firstname = 'john') or (person.number = 1.2))
+  .skip(1).take(2)
+  .Apply(procedure (const AValue : TPerson)
   	begin
   		result.name := 'hello ' + avalue.name;
-  	end); 
+  	end);
 ```
 
 ### Joins (inner, left, right and full)
@@ -234,6 +236,36 @@ Creates a unique stream of items.
 
 ```
 
+## Range
+
+Enumerate from 1 to 5 inclusive
+```
+var ints := Stream.Range(1, 5).ToArray();
+Assert.IsTrue(ints.AreEqual(Stream.From<int64>([1,2,3,4,5]));
+```
+
+Enumerate from 1 to 5 inclusive, step by 2
+```
+var ints := Stream.Range(1, 5, 2).ToArray();
+Assert.IsTrue(ints.AreEqual(Stream.From<int64>([1,3,5]));
+```
+
+Enumerate from 0 to 5 inclusive, step by 1.5
+```
+var floats := Stream.Range(0, 5, 1.5);
+Assert.IsTrue(floats.AreEqual(Stream.From<Extended>([0,1.5,3,4.5]));
+```
+
+## Strings
+
+```
+  Assert.IsTrue(Stream.From<char>(['a', 'b', 'c', 'd', 'e', 'f'])
+    .Equals(Stream.From('abcdef')));
+```
+
+Similarly, for enumerating TArray<byte> with values byte.
+
+
 ## Grouping
 
 ```
@@ -242,7 +274,18 @@ Creates a unique stream of items.
 
 ```
 
-## Optimising your queries  
+## Using Datasets
+
+See the test TStreamEnumTest.TestDataSetEnum and TStreamEnumTest.TestDataSetEnumRecord for an examples of how it works.
+
+Essencially, you will have something that descends from TDataSet. For streams, you need to do the following:
+1. Create a class or record that will have the same fields as TDataSet. Map each of the fields accordingly.
+   Fields can be annotated with the StreamField attribute if the names differ from the fields in the data set.
+2. Create a metadata class that maps onto the record or class.
+3. use Stream.ReflectMetadata<meta, t>() as shown above in other examples.
+4. use the Stream.From<T>(dataset)
+
+## Optimising your queries
 
 You should re-arrange your filter(), skip(), take() operations appropriately so that unnecessary map()/apply() actions are not performed.
 
@@ -259,31 +302,31 @@ on your own resources.
 ## The field() methods
 
 There are three special helper functions:
-- <b>field</b>(name) 
+- <b>field</b>(name)
 	used to reference fields in a record/class
 - <b>field</b>(name, sortorder)
 	used to reference a field and specify sort order (asc/desc) when sorting
 - <b>self</b>()
   used to allow queries to operate on enumerable types of simple types (NOTE: not implemented yet)
-  
+
 These are used in queries and by the Meta classes (created by calling Stream.Reflect)
 
 # Restrictions and considerations
 
 * Calling Apply() on records may not work as records are currently referenced by value, so updates don't propagate to the source collection. This will be reviewed
-* Calling any methods such as ToArray, TList, Count() use the enumeration to visit all values. 
+* Calling any methods such as ToArray, TList, Count() use the enumeration to visit all values.
 * Metadata model can only contain fields of TFieldExpression currently. In future, we may support referencing other metadata records.
 
 # License
 
-The Sempare Streams library is dual-licensed. You may choose to use it under the restrictions of the [GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html) at 
-no cost to you, or you may purchase for user under the [Sempare Limited Commercial License](./docs/commercial.license.md) 
+The Sempare Streams library is dual-licensed. You may choose to use it under the restrictions of the [GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html) at
+no cost to you, or you may purchase for user under the [Sempare Limited Commercial License](./docs/commercial.license.md)
 
-A commercial licence grants you the right to use Sempare Streams in your own applications, royalty free, and without any requirement to disclose your source code nor any modifications to 
-Sempare Streams to any other party. A commercial licence lasts into perpetuity, and entitles you to all future updates, free of charge. 
+A commercial licence grants you the right to use Sempare Streams in your own applications, royalty free, and without any requirement to disclose your source code nor any modifications to
+Sempare Streams to any other party. A commercial licence lasts into perpetuity, and entitles you to all future updates, free of charge.
 
-A commercial licence is sold per developer developing applications that use Sempare Streams. The initial cost is £15 per developer and includes first year of support. 
-For support thereafter, a nominal fee of £10 per developer per year if required (the cost of a few cups of coffee). 
+A commercial licence is sold per developer developing applications that use Sempare Streams. The initial cost is £10 per developer and includes first year of support.
+For support thereafter, a nominal fee of £10 per developer per year if required (the cost of a few cups of coffee).
 
 Please send an e-mail to info@sempare.ltd to request an invoice which will contain the bank details.
 
@@ -292,4 +335,4 @@ Support and enhancement requests submitted by users that pay for support will be
 
 # TODO
 
-The roadmap is included in the [TODO list](./docs/todo.md) 
+The roadmap is included in the [TODO list](./docs/todo.md)

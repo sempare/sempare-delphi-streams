@@ -36,6 +36,7 @@ unit Sempare.Streams;
 interface
 
 uses
+  Data.DB,
   System.Generics.Collections,
   System.Generics.Defaults,
   System.TypInfo,
@@ -287,7 +288,17 @@ type
     /// <summary>
     /// Filters items in the stream based on filter function.
     /// <summary>
-    function Filter(const ACondition: TFilterFunction<T>): TStreamOperation<T>; overload;
+    function Filter(const ACondition: TFilterFunction<T>): TStreamOperation<T>; overload; inline;
+
+    /// <summary>
+    /// Where items in the stream based on filter critera. The items should be a record or a class. (An alias for filter)
+    /// <summary>
+    function Where(const ACondition: TExpression): TStreamOperation<T>; overload; inline;
+
+    /// <summary>
+    /// Where items in the stream based on filter function. (An alias for filter)
+    /// <summary>
+    function Where(const ACondition: TFilterFunction<T>): TStreamOperation<T>; overload;
 
     /// <summary>
     /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
@@ -354,6 +365,13 @@ type
   public
 
     /// <summary>
+    /// Stream from a TDataSet source.
+    /// </summary>
+    /// <param name="ASource">A source of type TDataSet.</param>
+    /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TEnumerable source.</returns>
+    class function From<T>(const ASource: TDataSet): TStreamOperation<T>; overload; static;
+
+    /// <summary>
     /// Stream from a TEnumerable&lt;T&gt; source.
     /// </summary>
     /// <param name="ASource">A source of type TEnumerable&lt;T&gt;.</param>
@@ -373,6 +391,38 @@ type
     /// <param name="ASource">A source of type TArray&lt;T&gt;.</param>
     /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TArray source.</returns>;
     class function From<T>(const ASource: TArray<T>): TStreamOperation<T>; overload; static;
+
+    /// <summary>
+    /// Stream over chars in a string
+    /// </summary>
+    /// <param name="ASource">A source of type string.</param>
+    /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TArray source.</returns>;
+    class function From(const ASource: string): TStreamOperation<char>; overload; static;
+
+    /// <summary>
+    /// Stream over bytes in TBytes
+    /// </summary>
+    /// <param name="ASource">A source of type TBytes.</param>
+    /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TBytes source.</returns>;
+    class function From(const ASource: tbytes): TStreamOperation<byte>; overload; static;
+
+    /// <summary>
+    /// Stream ints over a range
+    /// </summary>
+    /// <param name="AStart">start value</param>
+    /// <param name="AEnd">end value</param>
+    /// <param name="ADelta">delta applied to index until it exceeds AEnd</param>
+    /// <returns>Range beteen AStart and AEnd in increments of ADelta.</returns>
+    class function Range(const AStart, AEnd: int64; const ADelta: int64 = 1): TStreamOperation<int64>; overload; static;
+
+    /// <summary>
+    /// Stream extended over a range
+    /// </summary>
+    /// <param name="AStart">start value</param>
+    /// <param name="AEnd">end value</param>
+    /// <param name="ADelta">delta applied to index until it exceeds AEnd</param>
+    /// <returns>Range beteen AStart and AEnd in increments of ADelta.</returns>
+    class function Range(const AStart, AEnd: extended; const ADelta: extended = 1): TStreamOperation<extended>; overload; static;
 
     /// <summary>
     /// Reflect the metadata record from a given type.
@@ -862,6 +912,16 @@ begin
   result := TUniqueEnum<T>.Create(FEnum, AComparator); //
 end;
 
+function TStreamOperation<T>.Where(const ACondition: TFilterFunction<T>): TStreamOperation<T>;
+begin
+  result := Filter(ACondition);
+end;
+
+function TStreamOperation<T>.Where(const ACondition: TExpression): TStreamOperation<T>;
+begin
+  result := Filter(ACondition);
+end;
+
 function TStreamOperation<T>.Unique: TStreamOperation<T>;
 begin
   result := TUniqueEnum<T>.Create(FEnum, TComparer<T>.Default); //
@@ -902,6 +962,31 @@ end;
 
 { Stream }
 
+class function Stream.From<T>(const ASource: TDataSet): TStreamOperation<T>;
+var
+  rttiType: TRttiType;
+begin
+  rttiType := rttictx.GetType(typeinfo(T));
+  case rttiType.TypeKind of
+    tkClass:
+      result := TDataSetEnumClass<T>.Create(ASource);
+    tkRecord:
+      result := TDataSetEnumRecord<T>.Create(ASource);
+  else
+    raise EStreamReflect.Create('Type must a a record or a class');
+  end;
+end;
+
+class function Stream.From(const ASource: tbytes): TStreamOperation<byte>;
+begin
+  result := TBytesEnum.Create(ASource);
+end;
+
+class function Stream.From(const ASource: string): TStreamOperation<char>;
+begin
+  result := TStringEnum.Create(ASource);
+end;
+
 class function Stream.From<T>(const ASource: TArray<T>): TStreamOperation<T>;
 begin
   result := TArrayEnum<T>.Create(ASource);
@@ -910,6 +995,16 @@ end;
 class function Stream.From<T>(const ASource: TEnumerable<T>): TStreamOperation<T>;
 begin
   result := TTEnumerableEnum<T>.Create(ASource);
+end;
+
+class function Stream.Range(const AStart, AEnd, ADelta: extended): TStreamOperation<extended>;
+begin
+  result := TFloatRangeEnum.Create(AStart, AEnd, ADelta);
+end;
+
+class function Stream.Range(const AStart, AEnd, ADelta: int64): TStreamOperation<int64>;
+begin
+  result := TIntRangeEnum.Create(AStart, AEnd, ADelta);
 end;
 
 class function Stream.ReflectMetadata<TMetadata, T>: TMetadata;
