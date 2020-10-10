@@ -153,6 +153,7 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
+        <DCC_UnitSearchPath>Z:\vm-mount\samples\spring4d\Source;Z:\vm-mount\samples\spring4d\Source\Base;Z:\vm-mount\samples\spring4d\Source\Base\Collections;Z:\vm-mount\samples\spring4d\Source\Core;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -175,10 +176,13 @@
         <DCCReference Include="src\Sempare.Streams.Filter.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Test.Common.pas"/>
         <DCCReference Include="src\Sempare.Streams.Enum.Test.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Spring4d.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Test.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Spring4d.pas"/>
         <None Include="README.md"/>
         <None Include="LICENSE"/>
         <None Include="docs\ideas.md"/>
+        <None Include="src\Sempare.Streams.inc"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -202,6 +206,13 @@
                 <Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcboffice2k260.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcbofficexp260.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\FMXTMSFNCDashboardPackPkgDXE12.bpl">TMS FNC Dashboard Pack for FMX</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\VCLTMSFNCDashboardPackPkgDXE12.bpl">TMS FNC Dashboard Pack for VCL</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\TMSFNCCloudPackPkgDEDXE12.bpl">TMS FNC Cloud Pack for FMX/VCL Designtime</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\TMSFNCChartPkgDEDXE12.bpl">TMS FNC Chart for FMX/VCL Designtime</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\TMSFNCBloxPkgDEDXE12.bpl">TMS FNC Blox for FMX/VCL Designtime</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\TMSFNCCorePkgDEDXE12.bpl">TMS FNC Core for FMX/VCL Designtime</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\TMSFNCUIPackPkgDEDXE12.bpl">TMS FNC UI Pack for FMX/VCL Designtime</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
@@ -213,6 +224,12 @@
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule">
                     <Platform Name="OSX32">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="src\Sempare.Streams.inc" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

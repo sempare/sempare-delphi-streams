@@ -17,7 +17,8 @@ be more functional with less side effects.
 
 Features include:
 - enumerating IEnumerable, TEnumerable, lists, dynamic arrays, TDataSet descendents
-- enumerating int and floating ranges, strings and bytes
+- enumerating Spring4d IEnumerables
+- enumerating int and floating ranges, strings
 - counting elements
 - grouping
 - mapping one type to another type
@@ -38,7 +39,7 @@ uses
 The main entry point is the _Stream_ record, where we stream from:
 * a list : <b>TList&lt;T&gt;</b>
 * a dynamic array : <b>TArray&lt;T&gt;</b>
-* a enumerable : <b>TEnumerable&lt;T&gt;</b> or <b>IEnumerable&lt;T&gt;</b>
+* a enumerable : <b>TEnumerable&lt;T&gt;</b>, <b>IEnumerable&lt;T&gt;</b> or Spring4d <b>IEnumerable&lt;T&gt;</b>
 * a descendant of TDataSet
 * a string
 
@@ -202,7 +203,7 @@ var arr := Stream.From<TPerson>(Fpeople)
 
 NOTE: parameter is normally const, but for records would want to use const[ref]. Using var as it is a bit easier to type, but
 notice that any changes to AVAlue itself will not change anything on the stream. The method is intended to allow you to manipulate
-fields and properties on classes. 
+fields and properties on classes.
 
 ### Joins (inner, left, right and full)
 
@@ -233,8 +234,8 @@ To summarise the joins:
 
 Two streams of the same type can be joined (or unioned):
 ```
-  Assert.IsTrue( 
-    stream.From<integer>([1, 2, 3, 4, 5, 6]) 
+  Assert.IsTrue(
+    stream.From<integer>([1, 2, 3, 4, 5, 6])
     .Equals(
         stream.From<integer>([1, 2, 3]).union(stream.From<integer>([4, 5, 6])
     )));
@@ -302,7 +303,7 @@ Essencially, you will have something that descends from TDataSet. For streams, y
 2. Create a metadata class that maps onto the record or class.
 3. use Stream.ReflectMetadata<meta, t>() as shown above in other examples.
 4. use the Stream.From<T>(dataset)
-	
+
 ## Caching results
 
 A Cache() operation is allowed when you may want to make a 'checkpoint' so you can performa a number of operations without  having
@@ -315,10 +316,25 @@ e.g.
 	// count the values
 	var count := cached.Count();
 	// start enumerating again on the cache
-	var arrCount := cached.Filter(function (const AValue : int64) : boolean 
+	var arrCount := cached.Filter(function (const AValue : int64) : boolean
 									begin
 										result := avalue mod 2 = 0;
 									end).Count();
+```
+
+## Spring4d Collections
+
+Uncomment the following line in src/Sempare.Streams.inc:
+```
+// {$DEFINE SEMPARE_STREAMS_SPRING4D_SUPPORT}
+```
+or simply add the define SEMPARE_STREAMS_SPRING4D_SUPPORT in the project options.
+
+Support is provided by a helper class. Add the unit
+```
+uses
+        Sempare.Streams,
+        Sempare.Streams.Spring4d;
 ```
 
 ## Optimising your queries
@@ -342,8 +358,6 @@ There are three special helper functions:
 	used to reference fields in a record/class
 - <b>field</b>(name, sortorder)
 	used to reference a field and specify sort order (asc/desc) when sorting
-- <b>self</b>()
-  used to allow queries to operate on enumerable types of simple types (NOTE: not implemented yet)
 
 These are used in queries and by the Meta classes (created by calling Stream.Reflect)
 

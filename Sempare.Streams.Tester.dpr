@@ -36,12 +36,13 @@ program Sempare.Streams.Tester;
 {$IFNDEF TESTINSIGHT}
 {$APPTYPE CONSOLE}
 {$ENDIF}{$STRONGLINKTYPES ON}
+{$I 'src/Sempare.Streams.inc'}
 
 uses
   System.SysUtils,
-{$IFDEF TESTINSIGHT}
+  {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
-{$ENDIF }
+  {$ENDIF }
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
   DUnitX.TestFramework,
@@ -56,7 +57,11 @@ uses
   Sempare.Streams.Filter.Test in 'src\Sempare.Streams.Filter.Test.pas',
   Sempare.Streams.Test.Common in 'src\Sempare.Streams.Test.Common.pas',
   Sempare.Streams.Enum.Test in 'src\Sempare.Streams.Enum.Test.pas',
-  Sempare.Streams.Test in 'src\Sempare.Streams.Test.pas';
+  {$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+  Sempare.Streams.Spring4d.Test in 'src\Sempare.Streams.Spring4d.Test.pas',
+  {$ENDIF }
+  Sempare.Streams.Test in 'src\Sempare.Streams.Test.pas',
+  Sempare.Streams.Spring4d in 'src\Sempare.Streams.Spring4d.pas';
 
 var
   runner: ITestRunner;
@@ -65,7 +70,7 @@ var
   nunitLogger: ITestLogger;
 
 begin
-   ReportMemoryLeaksOnShutdown := true;
+  ReportMemoryLeaksOnShutdown := true;
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
   exit;
@@ -76,10 +81,10 @@ begin
     // Create the test runner
     runner := TDUnitX.CreateRunner;
     // Tell the runner to use RTTI to find Fixtures
-    runner.UseRTTI := True;
+    runner.UseRTTI := true;
     // tell the runner how we will log things
     // Log to the console window
-    logger := TDUnitXConsoleLogger.Create(True);
+    logger := TDUnitXConsoleLogger.Create(true);
     runner.AddLogger(logger);
     // Generate an NUnit compatible XML File
     nunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);

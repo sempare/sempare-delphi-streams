@@ -35,8 +35,13 @@ unit Sempare.Streams.Enum;
 
 interface
 
+{$I 'Sempare.Streams.inc'}
+
 uses
   Data.DB,
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+  Spring.Collections,
+{$ENDIF}
   System.Rtti,
   System.Generics.Defaults,
   System.Generics.Collections,
@@ -134,15 +139,33 @@ type
   /// </summary>
   TIEnumerableEnum<T> = class(THasMore<T>)
   private
-    FEnum: IEnumerator<T>;
+    FEnum: System.IEnumerator<T>;
     FEof: boolean;
   public
-    constructor Create(const AEnum: IEnumerable<T>);
+    constructor Create(const AEnum: System.IEnumerable<T>);
     destructor Destroy; override;
     function EOF: boolean; override;
     function Current: T; override;
     procedure Next; override;
   end;
+
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+
+  /// <summary>
+  /// TSpringIEnumerableEnum is an enumerator over a Spring4d IEnumerable
+  /// </summary>
+  TSpringIEnumerableEnum<T> = class(THasMore<T>)
+  private
+    FEnum: Spring.Collections.IEnumerator<T>;
+    FEof: boolean;
+  public
+    constructor Create(const AEnum: Spring.Collections.IEnumerable<T>);
+    destructor Destroy; override;
+    function EOF: boolean; override;
+    function Current: T; override;
+    procedure Next; override;
+  end;
+{$ENDIF}
 
   /// <summary>
   /// TBaseEnum is a wrapper around another enumerator
@@ -465,9 +488,9 @@ begin
   inc(FOffset);
 end;
 
-{ TEnumerableEnum<T> }
+{ TIEnumerableEnum<T> }
 
-constructor TIEnumerableEnum<T>.Create(const AEnum: IEnumerable<T>);
+constructor TIEnumerableEnum<T>.Create(const AEnum: System.IEnumerable<T>);
 begin
   inherited Create();
   FEnum := AEnum.GetEnumerator;
@@ -494,6 +517,38 @@ procedure TIEnumerableEnum<T>.Next;
 begin
   FEof := not FEnum.MoveNext;
 end;
+
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+{ TSpringIEnumerableEnum<T> }
+
+constructor TSpringIEnumerableEnum<T>.Create(const AEnum: Spring.Collections.IEnumerable<T>);
+begin
+  inherited Create();
+  FEnum := AEnum.GetEnumerator;
+  Next;
+end;
+
+function TSpringIEnumerableEnum<T>.Current: T;
+begin
+  result := FEnum.Current;
+end;
+
+destructor TSpringIEnumerableEnum<T>.Destroy;
+begin
+  FEnum := nil;
+  inherited;
+end;
+
+function TSpringIEnumerableEnum<T>.EOF: boolean;
+begin
+  result := FEof;
+end;
+
+procedure TSpringIEnumerableEnum<T>.Next;
+begin
+  FEof := not FEnum.MoveNext;
+end;
+{$ENDIF}
 
 { TBaseEnum<T> }
 

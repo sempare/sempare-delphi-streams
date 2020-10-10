@@ -35,6 +35,8 @@ unit Sempare.Streams;
 
 interface
 
+{$I 'Sempare.Streams.inc'}
+
 uses
   Data.DB,
   System.Generics.Collections,
@@ -43,6 +45,9 @@ uses
   System.Rtti,
   Sempare.Streams.Rtti,
   System.SysUtils,
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+  Spring.Collections,
+{$ENDIF}
   Sempare.Streams.Types,
   Sempare.Streams.Expr,
   Sempare.Streams.Filter,
@@ -403,7 +408,7 @@ type
     /// </summary>
     /// <param name="ASource">A source of type IEnumerable&lt;T&gt;.</param>
     /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the IEnumerable source.</returns>
-    class function From<T>(const ASource: IEnumerable<T>): TStreamOperation<T>; overload; static;
+    class function From<T>(ASource: System.IEnumerable<T>): TStreamOperation<T>; overload; static;
 
     /// <summary>
     /// Stream from a dynarray (TArray&lt;T&gt;) source.
@@ -1076,7 +1081,9 @@ begin
   end;
 end;
 
-class function Stream.From<T>(const ASource: IEnumerable<T>): TStreamOperation<T>;
+
+
+class function Stream.From<T>(ASource: System.IEnumerable<T>): TStreamOperation<T>;
 begin
   result := TIEnumerableEnum<T>.Create(ASource);
 end;

@@ -31,49 +31,83 @@
  * limitations under the License.                                             *
  *                                                                            *
  ****************************************************************************%*)
-package Sempare.Streams;
+unit Sempare.Streams.Spring4d.Test;
 
-{$R *.res}
-{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
-{$ALIGN 8}
-{$ASSERTIONS ON}
-{$BOOLEVAL OFF}
-{$DEBUGINFO OFF}
-{$EXTENDEDSYNTAX ON}
-{$IMPORTEDDATA ON}
-{$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
-{$LONGSTRINGS ON}
-{$OPENSTRINGS ON}
-{$OPTIMIZATION OFF}
-{$OVERFLOWCHECKS OFF}
-{$RANGECHECKS OFF}
-{$REFERENCEINFO ON}
-{$SAFEDIVIDE OFF}
-{$STACKFRAMES ON}
-{$TYPEDADDRESS OFF}
-{$VARSTRINGCHECKS ON}
-{$WRITEABLECONST OFF}
-{$MINENUMSIZE 1}
-{$IMAGEBASE $400000}
-{$DEFINE DEBUG}
-{$ENDIF IMPLICITBUILDING}
-{$IMPLICITBUILD ON}
-{$I 'src/Sempare.Streams.inc'}
+// tests in this file should be standalone and not reliant on setup and teardown methods.
+// the idea is that these examples can be easily inspected as a type of 'documentation'
 
-requires
-//{$IF defined(SEMPARE_STREAMS_FIREDAC_SUPPORT)}
-  dbrtl,
-//{$ENDIF}
-  rtl;
+interface
 
-contains
-  Sempare.Streams.Expr in 'src\Sempare.Streams.Expr.pas',
-  Sempare.Streams.Filter in 'src\Sempare.Streams.Filter.pas',
-  Sempare.Streams in 'src\Sempare.Streams.pas',
-  Sempare.Streams.Rtti in 'src\Sempare.Streams.Rtti.pas',
-  Sempare.Streams.Sort in 'src\Sempare.Streams.Sort.pas',
-  Sempare.Streams.Types in 'src\Sempare.Streams.Types.pas',
-  Sempare.Streams.Enum in 'src\Sempare.Streams.Enum.pas';
+uses
+  System.Generics.Collections,
+  System.SysUtils,
+  Sempare.Streams,
+  Sempare.Streams.Test.Common,
+  DUnitX.TestFramework;
+
+type
+
+  [TestFixture]
+  TStreamTest = class(TStreamsTestBase)
+  public
+    [Setup]
+    procedure Setup; override;
+
+    [Teardown]
+    procedure Teardown; override;
+
+    [Test]
+    procedure TestList;
+
+    [Test]
+    procedure TestSet;
+  end;
+
+implementation
+
+uses
+  Spring.Collections,
+  Sempare.Streams.Spring4d;
+
+{ TStreamTest }
+
+procedure TStreamTest.Setup;
+begin
+  inherited;
+
+end;
+
+procedure TStreamTest.Teardown;
+begin
+  inherited;
+
+end;
+
+procedure TStreamTest.TestList;
+var
+  l: IList<Integer>;
+begin
+  l := TCollections.CreateList<Integer>;
+  l.AddRange([1, 2, 3, 4, 5]);
+  Assert.IsTrue( //
+    Stream.From<Integer>([1, 2, 3, 4, 5]) //
+    .Equals(Stream.From<Integer>(l)));
+end;
+
+procedure TStreamTest.TestSet;
+var
+  l: ISet<Integer>;
+begin
+  l := TCollections.CreateSet<Integer>;
+  l.AddRange([1, 2, 3, 4, 5]);
+ (* Stream.From<Integer>(l).apply(
+    procedure(var a: Integer)
+    begin
+      writeln(inttostr(a));
+    end);  *)
+  Assert.IsTrue( //
+    Stream.From<Integer>([3, 4, 2, 1, 5]) //
+    .Equals(Stream.From<Integer>(l)));
+end;
 
 end.

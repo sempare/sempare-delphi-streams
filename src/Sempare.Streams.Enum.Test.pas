@@ -35,6 +35,8 @@ unit Sempare.Streams.Enum.Test;
 
 interface
 
+{$I 'Sempare.Streams.inc'}
+
 uses
   Sempare.Streams,
   System.Generics.Collections,
@@ -75,12 +77,13 @@ type
     [Test]
     procedure TestApplyEnum;
 
+{$IF defined(SEMPARE_STREAMS_FIREDAC_SUPPORT)}
     [Test]
     procedure TestDataSetEnum;
 
     [Test]
     procedure TestDataSetEnumRecord;
-
+{$ENDIF}
     [Test]
     procedure TestUnionEnum;
     [Test]
@@ -262,6 +265,8 @@ begin
   result := ds;
 end;
 
+{$IF defined(SEMPARE_STREAMS_FIREDAC_SUPPORT)}
+
 procedure TStreamEnumTest.TestDataSetEnum;
 var
   ds: TFDMemTable;
@@ -306,6 +311,7 @@ begin
     ds.Free;
   end;
 end;
+{$ENDIF}
 
 procedure TStreamEnumTest.TestEnumerableEnum;
 var
