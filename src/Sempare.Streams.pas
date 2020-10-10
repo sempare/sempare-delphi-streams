@@ -188,6 +188,7 @@ type
     function IsCached: boolean;
   public
     class operator Implicit(Enum: IEnum<T>): TStreamOperation<T>; static;
+    class operator Implicit(const [ref] op: TStreamOperation<T>): IEnum<T>; static;
 
     /// <summary>
     /// Unique using the default comparator
@@ -229,6 +230,8 @@ type
     /// TakeOne returns a single element or raised EStreamItemNotFound
     /// <summary>
     function TakeOne: T;
+
+    function TryTakeOne(out AValue: T): boolean;
 
     /// <summary>
     /// ToArray returns all the items from the stream into a dynarray (TArray).
@@ -349,6 +352,29 @@ type
     /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
     /// <summary>
     function GroupToArray<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>; overload;
+
+    // numeric
+    function Min(): T; overload;
+    function Max(): T; overload;
+
+    function Min(const AComparer: TComparer<T>): T; overload;
+    function Max(const AComparer: TComparer<T>): T; overload;
+    function Min(AComparer: IComparer<T>): T; overload;
+    function Max(AComparer: IComparer<T>): T; overload;
+
+    // boolean
+    function Contains(const [ref] AValue: T): boolean; overload;
+    function Contains(const [ref] AValue: T; AComparer: IComparer<T>): boolean; overload;
+    function Contains(const [ref] AValue: T; AComparer: IEqualityComparer<T>): boolean; overload;
+    function Contains(const [ref] AValue: T; AComparer: TEqualityComparer<T>): boolean; overload;
+
+    function All(const APredicate: TPredicate<T>): boolean;
+    function Any(const APredicate: TPredicate<T>): boolean;
+
+    // misc
+
+    function Reverse(): TStreamOperation<T>;
+    function Schuffle(): TStreamOperation<T>;
 
     /// <summary>
     /// Count the items in the stream.
@@ -584,7 +610,7 @@ end;
 
 function GetExpr(AExpr: IFieldExpr; const AOP: TFieldExprOper; const AValue: TValue): IFieldExpr; inline;
 begin
-  AExpr.OP := AOP;
+  AExpr.op := AOP;
   AExpr.Value := AValue;
   result := AExpr;
 end;
@@ -760,6 +786,26 @@ begin
     result := Enum.Cache<T>(FEnum);
 end;
 
+function TStreamOperation<T>.Contains(const [ref] AValue: T; AComparer: IComparer<T>): boolean;
+begin
+  result := Enum.Contains<T>(FEnum, AValue, AComparer);
+end;
+
+function TStreamOperation<T>.Contains(const [ref] AValue: T; AComparer: IEqualityComparer<T>): boolean;
+begin
+  result := Enum.Contains<T>(FEnum, AValue, AComparer);
+end;
+
+function TStreamOperation<T>.Contains(const [ref] AValue: T; AComparer: TEqualityComparer<T>): boolean;
+begin
+  result := Enum.Contains<T>(FEnum, AValue, AComparer);
+end;
+
+function TStreamOperation<T>.Contains(const [ref] AValue: T): boolean;
+begin
+  result := Enum.Contains<T>(FEnum, AValue);
+end;
+
 function TStreamOperation<T>.Count: integer;
 begin
   result := Enum.Count<T>(FEnum);
@@ -820,6 +866,11 @@ begin
   result := supports(FEnum, IEnumCache<T>);
 end;
 
+class operator TStreamOperation<T>.Implicit(const [ref] op: TStreamOperation<T>): IEnum<T>;
+begin
+  result := op.FEnum;
+end;
+
 function TStreamOperation<T>.InnerJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
   : TStreamOperation<TJoined>;
 begin
@@ -836,6 +887,41 @@ end;
 function TStreamOperation<T>.Map<TOutput>(const AFunction: TMapFunction<T, TOutput>): TStreamOperation<TOutput>;
 begin
   result := TMapEnum<T, TOutput>.Create(FEnum, AFunction);
+end;
+
+function TStreamOperation<T>.Max(AComparer: IComparer<T>): T;
+begin
+  result := Enum.Max<T>(FEnum, AComparer);
+end;
+
+function TStreamOperation<T>.Max(const AComparer: TComparer<T>): T;
+begin
+  result := Enum.Max<T>(FEnum, AComparer);
+end;
+
+function TStreamOperation<T>.Max: T;
+begin
+  result := Enum.Min<T>(FEnum);
+end;
+
+function TStreamOperation<T>.Min: T;
+begin
+  result := Enum.Min<T>(FEnum);
+end;
+
+function TStreamOperation<T>.Min(AComparer: IComparer<T>): T;
+begin
+  result := Enum.Min<T>(FEnum, AComparer);
+end;
+
+function TStreamOperation<T>.Min(const AComparer: TComparer<T>): T;
+begin
+  result := Enum.Min<T>(FEnum, AComparer);
+end;
+
+function TStreamOperation<T>.Reverse: TStreamOperation<T>;
+begin
+  result := Enum.Reverse<T>(FEnum);
 end;
 
 function TStreamOperation<T>.RightJoin<TOther, TJoined>(const [ref] AOther: TStreamOperation<TOther>; const AOn: TJoinOnFunction<T, TOther>; const ASelect: TJoinSelectFunction<T, TOther, TJoined>)
@@ -857,7 +943,7 @@ var
   Comparer: IComparer<T>;
 begin
   if AComparator = nil then
-    Comparer := TComparer<T>.Default
+    Comparer := System.Generics.Defaults.TComparer<T>.Default
   else
     Comparer := AComparator;
   if ADirection = soDescending then
@@ -878,7 +964,7 @@ begin
   else
   begin
     if AComparator = nil then
-      Comparer := TComparer<T>.Default
+      Comparer := System.Generics.Defaults.TComparer<T>.Default
     else
       Comparer := AComparator;
     result := TSortedEnum<T>.Create(FEnum, Comparer);
@@ -900,8 +986,13 @@ begin
     raise EStream.Create('SortBy should be used on classes or records only');
 
     result := TSortedEnum<T>.Create(FEnum, //
-      TComparer<T>.Default);
+      System.Generics.Defaults.TComparer<T>.Default);
   end;
+end;
+
+function TStreamOperation<T>.Schuffle: TStreamOperation<T>;
+begin
+  result := Enum.Schuffle<T>(FEnum);
 end;
 
 function TStreamOperation<T>.Skip(const ANumber: integer): TStreamOperation<T>;
@@ -935,6 +1026,18 @@ begin
   result := Enum.ToList<T>(FEnum);
 end;
 
+function TStreamOperation<T>.TryTakeOne(out AValue: T): boolean;
+var
+  res: TArray<T>;
+begin
+  res := Enum.ToArray<T>(ttake<T>.Create(FEnum, 1));
+  if length(res) <> 1 then
+    exit(false);
+  AValue := res[0];
+  res := nil;
+  exit(true);
+end;
+
 function TStreamOperation<T>.Union(const [ref] AOther: TStreamOperation<T>): TStreamOperation<T>;
 begin
   result := TUnionEnum<T>.Create([Self.FEnum, AOther.FEnum]);
@@ -942,7 +1045,7 @@ end;
 
 function TStreamOperation<T>.Unique(AComparator: IComparer<T>): TStreamOperation<T>;
 begin
-  result := TUniqueEnum<T>.Create(FEnum, AComparator); //
+  result := TUniqueEnum<T>.Create(FEnum, AComparator);
 end;
 
 procedure TStreamOperation<T>.Update(const AFunction: TApplyFunction<T>);
@@ -962,7 +1065,17 @@ end;
 
 function TStreamOperation<T>.Unique: TStreamOperation<T>;
 begin
-  result := TUniqueEnum<T>.Create(FEnum, TComparer<T>.Default); //
+  result := TUniqueEnum<T>.Create(FEnum, System.Generics.Defaults.TComparer<T>.Default); //
+end;
+
+function TStreamOperation<T>.All(const APredicate: TPredicate<T>): boolean;
+begin
+  result := Enum.All<T>(FEnum, APredicate);
+end;
+
+function TStreamOperation<T>.Any(const APredicate: TPredicate<T>): boolean;
+begin
+  result := Enum.Any<T>(FEnum, APredicate);
 end;
 
 procedure TStreamOperation<T>.Apply(const AFunction: TApplyFunction<T>);
@@ -1080,8 +1193,6 @@ begin
     fld.SetValue(@result, exprVal);
   end;
 end;
-
-
 
 class function Stream.From<T>(ASource: System.IEnumerable<T>): TStreamOperation<T>;
 begin

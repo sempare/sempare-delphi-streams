@@ -43,12 +43,16 @@ uses
   Spring.Collections,
 {$ENDIF}
   System.Rtti,
+  System.SysUtils,
   System.Generics.Defaults,
   System.Generics.Collections,
   Sempare.Streams.Types,
   Sempare.Streams.Filter;
 
 type
+  TComparer<T> = reference to function(const Left, Right: T): integer;
+  TEqualityComparer<T> = reference to function(const [ref] AValue, BValue: T): boolean;
+
   /// <summary>
   /// Enum is a utility class for enumerable operations
   /// <summary>
@@ -56,6 +60,8 @@ type
   public
     class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean; overload; static;
     class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IComparer<T>): boolean; overload; static;
+    class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IEqualityComparer<T>): boolean; overload; static;
+    class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: TEqualityComparer<T>): boolean; overload; static;
     class function Count<T>(AEnum: IEnum<T>): integer; static;
     class function ToArray<T>(AEnum: IEnum<T>): TArray<T>; static;
     class function ToList<T>(AEnum: IEnum<T>): TList<T>; static;
@@ -67,6 +73,36 @@ type
     class function Cache<T>(AEnum: TEnumerable<T>): IEnum<T>; overload; static;
     class function Map<T, TOutput>(AEnum: IEnum<T>; const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>; static;
 
+    // numeric
+    class function Min<T>(AEnum: IEnum<T>): T; overload; static;
+    class function Max<T>(AEnum: IEnum<T>): T; overload; static;
+
+    class function Min<T>(AEnum: IEnum<T>; const AComparer: TComparer<T>): T; overload; static;
+    class function Max<T>(AEnum: IEnum<T>; const AComparer: TComparer<T>): T; overload; static;
+    class function Min<T>(AEnum: IEnum<T>; AComparer: IComparer<T>): T; overload; static;
+    class function Max<T>(AEnum: IEnum<T>; AComparer: IComparer<T>): T; overload; static;
+    class function Sum(AEnum: IEnum<extended>): extended; overload; static;
+    class function Sum(AEnum: IEnum<int64>): int64; overload; static;
+    class function Average(AEnum: IEnum<extended>): extended; overload; static;
+    class function Average(AEnum: IEnum<int64>): extended; overload; static;
+
+    // boolean
+    class function Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T): boolean; overload; static;
+    class function Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: IComparer<T>): boolean; overload; static;
+    class function Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: IEqualityComparer<T>): boolean; overload; static;
+    class function Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: TEqualityComparer<T>): boolean; overload; static;
+
+    class function All<T>(AEnum: IEnum<T>; const APredicate: TPredicate<T>): boolean; static;
+    class function Any<T>(AEnum: IEnum<T>; const APredicate: TPredicate<T>): boolean; static;
+
+    // misc
+
+    class function Reverse<T>(AEnum: IEnum<T>): IEnum<T>;
+    class function Schuffle<T>(AEnum: IEnum<T>): IEnum<T>;
+
+    class function Cast<TInput, TOutput: class>(AEnum: IEnum<TInput>): IEnum<TOutput>;
+
+    // grouping
     class function GroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, T>; overload; static;
     class function GroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>; overload; static;
     class function GroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TList<T>>; overload; static;
@@ -225,14 +261,14 @@ type
   /// <summary>
   /// TIntRange allows us to enumerate a range of ints
   /// </summary>
-  TIntRangeEnum = class(THasMore<Int64>)
+  TIntRangeEnum = class(THasMore<int64>)
   private
-    FIdx: Int64;
-    FEnd, FDelta: Int64;
+    FIdx: int64;
+    FEnd, FDelta: int64;
   public
-    constructor Create(const AStart, AEnd: Int64; const ADelta: Int64 = 1);
+    constructor Create(const AStart, AEnd: int64; const ADelta: int64 = 1);
     function EOF: boolean; override;
-    function Current: Int64; override;
+    function Current: int64; override;
     procedure Next; override;
   end;
 
@@ -256,7 +292,7 @@ type
   TStringEnum = class(THasMore<char>)
   private
     FValue: string;
-    FIdx, FEnd: Int64;
+    FIdx, FEnd: int64;
   public
     constructor Create(const AValue: string);
     function EOF: boolean; override;
@@ -448,8 +484,6 @@ type
 implementation
 
 uses
-  System.SysUtils,
-
   Sempare.Streams,
   Sempare.Streams.Rtti;
 
@@ -549,7 +583,6 @@ begin
   FEof := not FEnum.MoveNext;
 end;
 {$ENDIF}
-
 { TBaseEnum<T> }
 
 constructor TBaseEnum<T>.Create(AEnum: IEnum<T>);
@@ -822,6 +855,38 @@ begin
   exit(false);
 end;
 
+class function Enum.All<T>(AEnum: IEnum<T>; const APredicate: TPredicate<T>): boolean;
+var
+  v: T;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
+  begin
+    v := e.Current;
+    if not APredicate(v) then
+      exit(false);
+  end;
+  exit(true);
+end;
+
+class function Enum.Any<T>(AEnum: IEnum<T>; const APredicate: TPredicate<T>): boolean;
+var
+  v: T;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
+  begin
+    v := e.Current;
+    if APredicate(v) then
+      exit(true);
+  end;
+  exit(false);
+end;
+
 class procedure Enum.Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyFunction<T>);
 var
   v: T;
@@ -848,6 +913,53 @@ end;
 class function Enum.Cache<T>(AEnum: TList<T>): IEnum<T>;
 begin
   result := TEnumCache<T>.Create(AEnum).GetEnum;
+end;
+
+class function Enum.Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: IComparer<T>): boolean;
+var
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
+  begin
+    if AComparer.Compare(e.Current, AValue) = 0 then
+      exit(true);
+  end;
+  exit(false);
+end;
+
+class function Enum.Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: TEqualityComparer<T>): boolean;
+var
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
+  begin
+    if AComparer(e.Current, AValue) then
+      exit(true);
+  end;
+  exit(false);
+end;
+
+class function Enum.Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: IEqualityComparer<T>): boolean;
+var
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
+  begin
+    if AComparer.Equals(e.Current, AValue) then
+      exit(true);
+  end;
+  exit(false);
+end;
+
+class function Enum.Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T): boolean;
+begin
+  result := Enum.Contains<T>(AEnum, AValue, System.Generics.Defaults.TComparer<T>.Default);
 end;
 
 class function Enum.Count<T>(AEnum: IEnum<T>): integer;
@@ -989,9 +1101,166 @@ begin
     insert(AFunction(e.Current), result, length(result));
 end;
 
+class function Enum.Max<T>(AEnum: IEnum<T>): T;
+begin
+  result := Enum.Max<T>(AEnum, System.Generics.Defaults.TComparer<T>.Default);
+end;
+
+class function Enum.Max<T>(AEnum: IEnum<T>; AComparer: IComparer<T>): T;
+var
+  hasMax: boolean;
+  v: T;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  hasMax := false;
+  while e.HasMore do
+  begin
+    v := e.Current;
+    if not hasMax or (AComparer.Compare(v, result) > 0) then
+    begin
+      result := v;
+      hasMax := true;
+    end;
+  end;
+  if not hasMax then
+    raise EStreamItemNotFound.Create('no maximum found');
+end;
+
+class function Enum.Min<T>(AEnum: IEnum<T>): T;
+begin
+  result := Enum.Min<T>(AEnum, System.Generics.Defaults.TComparer<T>.Default);
+end;
+
+class function Enum.Max<T>(AEnum: IEnum<T>; const AComparer: TComparer<T>): T;
+var
+  hasMax: boolean;
+  v: T;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  hasMax := false;
+  while e.HasMore do
+  begin
+    v := e.Current;
+    if not hasMax or (AComparer(v, result) > 0) then
+    begin
+      result := v;
+      hasMax := true;
+    end;
+  end;
+  if not hasMax then
+    raise EStreamItemNotFound.Create('no maximum found');
+end;
+
+class function Enum.Min<T>(AEnum: IEnum<T>; const AComparer: TComparer<T>): T;
+var
+  hasMin: boolean;
+  v: T;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  hasMin := false;
+  while e.HasMore do
+  begin
+    v := e.Current;
+    if not hasMin or (AComparer(v, result) < 0) then
+    begin
+      result := v;
+      hasMin := true;
+    end;
+  end;
+  if not hasMin then
+    raise EStreamItemNotFound.Create('no minimim found');
+end;
+
+class function Enum.Min<T>(AEnum: IEnum<T>; AComparer: IComparer<T>): T;
+var
+  hasMin: boolean;
+  v: T;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  hasMin := false;
+  while e.HasMore do
+  begin
+    v := e.Current;
+    if not hasMin or (AComparer.Compare(v, result) < 0) then
+    begin
+      result := v;
+      hasMin := true;
+    end;
+  end;
+  if not hasMin then
+    raise EStreamItemNotFound.Create('no minimim found');
+end;
+
+class function Enum.Reverse<T>(AEnum: IEnum<T>): IEnum<T>;
+var
+  items: TArray<T>;
+  i, j, Max: integer;
+  tmp: T;
+begin
+  items := Enum.ToArray<T>(AEnum);
+  Max := high(items);
+  for i := 0 to Max div 2 do
+  begin
+    tmp := items[i];
+    j := Max - i;
+    items[i] := items[j];
+    items[j] := tmp;
+  end;
+  result := Stream.From<T>(items);
+end;
+
+class function Enum.Schuffle<T>(AEnum: IEnum<T>): IEnum<T>;
+var
+  items: TArray<T>;
+  i, j, Max: integer;
+  tmp: T;
+
+begin
+  items := Enum.ToArray<T>(AEnum);
+  Max := length(items);
+  for i := 0 to high(items) do
+  begin
+    tmp := items[i];
+    j := random(Max);
+    items[i] := items[j];
+    items[j] := tmp;
+  end;
+  result := Stream.From<T>(items);
+end;
+
+class function Enum.Sum(AEnum: IEnum<int64>): int64;
+var
+  e: IEnum<int64>;
+begin
+  if not Enum.TryGetCached<int64>(AEnum, e) then
+    e := AEnum;
+  result := 0;
+  while e.HasMore do
+    result := result + e.Current;
+end;
+
+class function Enum.Sum(AEnum: IEnum<extended>): extended;
+var
+  e: IEnum<extended>;
+begin
+  if not Enum.TryGetCached<extended>(AEnum, e) then
+    e := AEnum;
+  result := 0;
+  while e.HasMore do
+    result := result + e.Current;
+end;
+
 class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean;
 begin
-  result := Enum.AreEqual<T>(AEnumA, AEnumB, TComparer<T>.default);
+  result := Enum.AreEqual<T>(AEnumA, AEnumB, System.Generics.Defaults.TComparer<T>.Default);
 end;
 
 class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IComparer<T>): boolean;
@@ -1014,11 +1283,94 @@ begin
   end;
 end;
 
+class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IEqualityComparer<T>): boolean;
+var
+  A, b: T;
+  amore, bmore: boolean;
+begin
+  while true do
+  begin
+    amore := AEnumA.HasMore;
+    bmore := AEnumB.HasMore;
+    if not amore and not bmore then
+      exit(true);
+    if amore <> bmore then
+      exit(false);
+    if not comparator.Equals(A, b) or not comparator.Equals(AEnumA.Current, AEnumB.Current) then
+      exit(false);
+  end;
+  exit(false);
+end;
+
+class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: TEqualityComparer<T>): boolean;
+var
+  A, b: T;
+  amore, bmore: boolean;
+begin
+  while true do
+  begin
+    amore := AEnumA.HasMore;
+    bmore := AEnumB.HasMore;
+    if not amore and not bmore then
+      exit(true);
+
+    if amore <> bmore then
+      exit(false);
+
+    if comparator(AEnumA.Current, AEnumB.Current) then
+      exit(false);
+  end;
+end;
+
 class function Enum.Cache<T>(AEnum: TEnumerable<T>): IEnum<T>;
 begin
   result := TEnumCache<T>.Create(AEnum).GetEnum;
 end;
 
+class function Enum.Cast<TInput, TOutput>(AEnum: IEnum<TInput>): IEnum<TOutput>;
+begin
+  result := TMapEnum<TInput, TOutput>.Create(AEnum,
+    function(const AInput: TInput): TOutput
+    begin
+      result := AInput as TOutput;
+    end);
+end;
+
+class function Enum.Average(AEnum: IEnum<int64>): extended;
+var
+  e: IEnum<int64>;
+  c: integer;
+begin
+  if not Enum.TryGetCached<int64>(AEnum, e) then
+    e := AEnum;
+  result := 0;
+  c := 0;
+  while e.HasMore do
+  begin
+    result := result + e.Current;
+    inc(c);
+  end;
+  if c <> 0 then
+    result := result / c;
+end;
+
+class function Enum.Average(AEnum: IEnum<extended>): extended;
+var
+  e: IEnum<extended>;
+  c: integer;
+begin
+  if not Enum.TryGetCached<extended>(AEnum, e) then
+    e := AEnum;
+  result := 0;
+  c := 0;
+  while e.HasMore do
+  begin
+    result := result + e.Current;
+    inc(c);
+  end;
+  if c <> 0 then
+    result := result / c;
+end;
 { TCachedEnum<T> }
 
 constructor TCachedEnum<T>.Create(Cache: IEnumCache<T>);
@@ -1158,21 +1510,21 @@ end;
 
 procedure TJoinEnum<TLeft, TRight, TJoined>.FindNext;
 var
-  left: TLeft;
-  right: TRight;
+  Left: TLeft;
+  Right: TRight;
   match: boolean;
 begin
   FHasNext := false;
   while FHasLeft and FHasRight do
   begin
-    left := FEnumLeft.Current;
-    right := FEnumRight.Current;
+    Left := FEnumLeft.Current;
+    Right := FEnumRight.Current;
 
-    match := FOn(left, right);
+    match := FOn(Left, Right);
     if match then
     begin
       FHasNext := true;
-      FNext := FSelect(left, right);
+      FNext := FSelect(Left, Right);
     end;
 
     FHasRight := FEnumRight.HasMore;
@@ -1273,30 +1625,30 @@ end;
 
 procedure TLeftJoinEnum<TLeft, TRight, TJoined>.FindNext;
 var
-  left: TLeft;
-  right: TRight;
+  Left: TLeft;
+  Right: TRight;
   match: boolean;
 begin
   FHasNext := false;
   while FHasLeft and FHasRight do
   begin
-    left := FEnumLeft.Current;
-    right := FEnumRight.Current;
-    match := FOn(left, right);
+    Left := FEnumLeft.Current;
+    Right := FEnumRight.Current;
+    match := FOn(Left, Right);
     if match then
     begin
       FHasNext := true;
       FFoundRight := true;
-      FNext := FSelect(left, right);
+      FNext := FSelect(Left, Right);
     end;
     FHasRight := FEnumRight.HasMore;
     if not FHasRight then
     begin
       if not FFoundRight then
       begin
-        fillchar(right, sizeof(right), 0);
+        fillchar(Right, sizeof(Right), 0);
         FHasNext := true;
-        FNext := FSelect(left, right);
+        FNext := FSelect(Left, Right);
         match := true;
       end;
 
@@ -1474,7 +1826,7 @@ end;
 
 { TIntRange }
 
-constructor TIntRangeEnum.Create(const AStart, AEnd: Int64; const ADelta: Int64);
+constructor TIntRangeEnum.Create(const AStart, AEnd: int64; const ADelta: int64);
 begin
   inherited Create();
   FIdx := AStart;
@@ -1482,7 +1834,7 @@ begin
   FDelta := ADelta;
 end;
 
-function TIntRangeEnum.Current: Int64;
+function TIntRangeEnum.Current: int64;
 begin
   result := FIdx;
 end;
