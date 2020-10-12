@@ -10,6 +10,8 @@ uses
   Sempare.Streams;
 
 type
+  Stream = Sempare.Streams.Stream;
+
   StreamSpring4dHelper = record helper for Stream
 
     /// <summary>

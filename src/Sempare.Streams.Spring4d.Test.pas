@@ -41,7 +41,6 @@ interface
 uses
   System.Generics.Collections,
   System.SysUtils,
-  Sempare.Streams,
   Sempare.Streams.Test.Common,
   DUnitX.TestFramework;
 
