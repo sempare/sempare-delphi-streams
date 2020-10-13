@@ -102,8 +102,8 @@ type
 
     class function Cast<TInput; TOutput: class>(AEnum: IEnum<TInput>): IEnum<TOutput>;
 
-    class procedure Delete<T>(AEnum: IEnum<T>; const ATarget: TList<T>; AComparator: IComparer<T>);
-    class procedure Delete<T>(AEnum: IEnum<T>; var ATarget: TArray<T>; AComparator: IComparer<T>);
+    class procedure Delete<T>(AEnum: IEnum<T>; const ATarget: TList<T>; AComparator: IComparer<T>); overload;
+    class procedure Delete<T>(AEnum: IEnum<T>; var ATarget: TArray<T>; AComparator: IComparer<T>); overload;
     class procedure Delete<T, TValue>(AEnum: IEnum<T>; const ATarget: TDictionary<T, TValue>); overload;
 
     // grouping
