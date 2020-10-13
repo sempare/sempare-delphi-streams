@@ -33,9 +33,6 @@
  ****************************************************************************%*)
 unit Sempare.Streams.Spring4d.Test;
 
-// tests in this file should be standalone and not reliant on setup and teardown methods.
-// the idea is that these examples can be easily inspected as a type of 'documentation'
-
 interface
 
 uses
@@ -47,13 +44,17 @@ uses
 type
 
   [TestFixture]
-  TStreamTest = class(TStreamsTestBase)
+  TSpring4dStreamTest = class(TStreamsTestBase)
   public
     [Setup]
     procedure Setup; override;
 
     [Teardown]
     procedure Teardown; override;
+
+        [Test]
+    procedure TestEmptyList;
+
 
     [Test]
     procedure TestList;
@@ -68,21 +69,32 @@ uses
   Spring.Collections,
   Sempare.Streams.Spring4d;
 
-{ TStreamTest }
+{ TSpring4dStreamTest }
 
-procedure TStreamTest.Setup;
+procedure TSpring4dStreamTest.Setup;
 begin
   inherited;
 
 end;
 
-procedure TStreamTest.Teardown;
+procedure TSpring4dStreamTest.Teardown;
 begin
   inherited;
 
 end;
 
-procedure TStreamTest.TestList;
+procedure TSpring4dStreamTest.TestEmptyList;
+var
+  l: IList<Integer>;
+  lst : TArray<integer>;
+begin
+  l := TCollections.CreateList<Integer>;
+  Assert.IsTrue( //
+    Stream.From<Integer>(lst) //
+    .Equals(Stream.From<Integer>(l)));
+end;
+
+procedure TSpring4dStreamTest.TestList;
 var
   l: IList<Integer>;
 begin
@@ -93,20 +105,21 @@ begin
     .Equals(Stream.From<Integer>(l)));
 end;
 
-procedure TStreamTest.TestSet;
+procedure TSpring4dStreamTest.TestSet;
 var
   l: ISet<Integer>;
 begin
   l := TCollections.CreateSet<Integer>;
   l.AddRange([1, 2, 3, 4, 5]);
- (* Stream.From<Integer>(l).apply(
-    procedure(var a: Integer)
-    begin
-      writeln(inttostr(a));
-    end);  *)
   Assert.IsTrue( //
     Stream.From<Integer>([3, 4, 2, 1, 5]) //
     .Equals(Stream.From<Integer>(l)));
 end;
+
+
+initialization
+
+TDUnitX.RegisterTestFixture(TSpring4dStreamTest);
+
 
 end.
