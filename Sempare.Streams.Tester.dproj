@@ -179,6 +179,8 @@
         <DCCReference Include="src\Sempare.Streams.Spring4d.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Spring4d.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Arr.Test.pas"/>
+        <DCCReference Include="src\Sempare.Streams.List.Test.pas"/>
         <None Include="README.md"/>
         <None Include="LICENSE"/>
         <None Include="docs\ideas.md"/>

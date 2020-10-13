@@ -139,6 +139,8 @@
         <DCCReference Include="src\Sempare.Streams.Sort.pas"/>
         <DCCReference Include="src\Sempare.Streams.Types.pas"/>
         <DCCReference Include="src\Sempare.Streams.Enum.pas"/>
+        <DCCReference Include="src\Sempare.Streams.Spring4d.pas"/>
+        <None Include="src\Sempare.Streams.inc"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
