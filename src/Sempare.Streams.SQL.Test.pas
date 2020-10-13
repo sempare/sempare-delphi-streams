@@ -84,19 +84,8 @@ type
   end;
 
   TPersonAddr = record
-    Id: integer;
-    Name: string;
-    AddrId: integer;
-    Addr: string;
-    Country: string;
-  end;
-
-  TPersonAddrMeta = record
-    Id: TFieldExpression;
-    Name: TFieldExpression;
-    AddrId: TFieldExpression;
-    Addr: TFieldExpression;
-    Country: TFieldExpression;
+    Person: TPerson;
+    Addr: TAddr;
   end;
 
 implementation
@@ -152,12 +141,12 @@ begin
 
   // syntax for join
   results := Stream.Query(connection) //
-    .From<TPerson>('p') //
-    .InnerJoin<TAddr>('a') //
+    .From<TPerson>('person') // maps onto TPersonAddr.Person
+    .InnerJoin<TAddr>('addr') // maps onto TPersonAddr.Addr
     .Where(Person.Name = 'john') //
     .Offset(1) //
     .Limit(10) //
-    .OrderBy(Person.Name)
+    .OrderBy(Person.Name) //
     .ToArray<TPersonAddr>;
 
 end;
