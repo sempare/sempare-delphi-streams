@@ -100,7 +100,11 @@ type
     class function Reverse<T>(AEnum: IEnum<T>): IEnum<T>;
     class function Schuffle<T>(AEnum: IEnum<T>): IEnum<T>;
 
-    class function Cast<TInput, TOutput: class>(AEnum: IEnum<TInput>): IEnum<TOutput>;
+    class function Cast<TInput; TOutput: class>(AEnum: IEnum<TInput>): IEnum<TOutput>;
+
+    class procedure Delete<T>(AEnum: IEnum<T>; const ATarget: TList<T>; AComparator: IComparer<T>);
+    class procedure Delete<T>(AEnum: IEnum<T>; var ATarget: TArray<T>; AComparator: IComparer<T>);
+    class procedure Delete<T, TValue>(AEnum: IEnum<T>; const ATarget: TDictionary<T, TValue>); overload;
 
     // grouping
     class function GroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, T>; overload; static;
@@ -155,16 +159,25 @@ type
     function GetCache: TList<T>;
   end;
 
+  TSortedStatus = (ssSorted, ssUnsorted, ssUnknown);
+
+  ISortedEnum = interface
+    ['{4D59F9E5-7F74-455E-97EF-4FA6842B4FD0}']
+    function GetSortedStatus: TSortedStatus;
+  end;
+
   /// <summary>
   /// TTEnumerableEnum is an enumerator over a TEnumerable
   /// </summary>
-  TTEnumerableEnum<T> = class(THasMore<T>)
+  TTEnumerableEnum<T> = class(THasMore<T>, ISortedEnum)
   private
     FEnum: TEnumerator<T>;
     FEof: boolean;
+    FSortedStatus: TSortedStatus;
   public
-    constructor Create(const AEnum: TEnumerable<T>);
+    constructor Create(const AEnum: TEnumerable<T>; ASortedStatus: TSortedStatus = ssUnknown);
     destructor Destroy; override;
+    function GetSortedStatus: TSortedStatus;
     function EOF: boolean; override;
     function Current: T; override;
     procedure Next; override;
@@ -487,7 +500,12 @@ uses
   Sempare.Streams,
   Sempare.Streams.Rtti;
 
-{ TArrayEnum<T> }
+type
+  TArrayHelper = class helper for TArray
+    class function IndexOf<T>(const ATarget: TArray<T>; const [ref] AValue: T; AComparator: IComparer<T>; out idx: integer): boolean; static;
+  end;
+
+  { TArrayEnum<T> }
 
 constructor TArrayEnum<T>.Create(const AData: TArray<T>);
 begin
@@ -973,6 +991,72 @@ begin
     inc(result);
 end;
 
+class procedure Enum.Delete<T, TValue>(AEnum: IEnum<T>; const ATarget: TDictionary<T, TValue>);
+var
+  idx: integer;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  while e.HasMore do
+  begin
+    ATarget.Remove(e.Current);
+  end;
+end;
+
+class procedure Enum.Delete<T>(AEnum: IEnum<T>; const ATarget: TList<T>; AComparator: IComparer<T>);
+var
+  idx: integer;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  if supports(e, ISortedEnum) then
+  begin
+    if AComparator = nil then
+      AComparator := System.Generics.Defaults.TComparer<T>.Default;
+    while e.HasMore do
+    begin
+      if ATarget.BinarySearch(e.Current, idx, AComparator) then
+        ATarget.Delete(idx);
+    end;
+  end
+  else
+  begin
+    while e.HasMore do
+    begin
+      ATarget.Remove(e.Current);
+    end;
+  end;
+end;
+
+class procedure Enum.Delete<T>(AEnum: IEnum<T>; var ATarget: TArray<T>; AComparator: IComparer<T>);
+var
+  idx: integer;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  if supports(e, ISortedEnum) then
+  begin
+    if AComparator = nil then
+      AComparator := System.Generics.Defaults.TComparer<T>.Default;
+    while e.HasMore do
+    begin
+      if TArray.BinarySearch<T>(ATarget, e.Current, idx, AComparator) then
+        System.Delete(ATarget, idx, 1);
+    end;
+  end
+  else
+  begin
+    while e.HasMore do
+    begin
+      if TArray.IndexOf<T>(ATarget, e.Current, AComparator, idx) then
+        System.Delete(ATarget, idx, 1);
+    end;
+  end;
+end;
+
 class function Enum.GroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>;
 var
   extractor: IFieldExtractor;
@@ -1414,10 +1498,11 @@ end;
 
 { TEnumerableEnum2<T> }
 
-constructor TTEnumerableEnum<T>.Create(const AEnum: TEnumerable<T>);
+constructor TTEnumerableEnum<T>.Create(const AEnum: TEnumerable<T>; ASortedStatus: TSortedStatus);
 begin
   inherited Create();
   FEnum := AEnum.GetEnumerator;
+  FSortedStatus := ASortedStatus;
   Next;
 end;
 
@@ -1435,6 +1520,11 @@ end;
 function TTEnumerableEnum<T>.EOF: boolean;
 begin
   result := FEof;
+end;
+
+function TTEnumerableEnum<T>.GetSortedStatus: TSortedStatus;
+begin
+  result := FSortedStatus;
 end;
 
 procedure TTEnumerableEnum<T>.Next;
@@ -1456,7 +1546,7 @@ begin
     FItems.BinarySearch(v, i, comparator);
     FItems.insert(i, v);
   end;
-  inherited Create(TTEnumerableEnum<T>.Create(FItems));
+  inherited Create(TTEnumerableEnum<T>.Create(FItems, ssSorted));
 end;
 
 destructor TSortedEnum<T>.Destroy;
@@ -1472,7 +1562,7 @@ end;
 
 function TSortedEnum<T>.GetEnum: IEnum<T>;
 begin
-  result := TTEnumerableEnum<T>.Create(FItems);
+  result := TTEnumerableEnum<T>.Create(FItems, ssSorted);
 end;
 
 { TJoinEnum<TLeft, TRight, TJoined> }
@@ -1689,7 +1779,7 @@ begin
     if not FItems.BinarySearch(v, i, comparator) then
       FItems.insert(i, v);
   end;
-  inherited Create(TTEnumerableEnum<T>.Create(FItems));
+  inherited Create(TTEnumerableEnum<T>.Create(FItems, ssSorted));
 end;
 
 destructor TUniqueEnum<T>.Destroy;
@@ -1705,7 +1795,7 @@ end;
 
 function TUniqueEnum<T>.GetEnum: IEnum<T>;
 begin
-  result := TTEnumerableEnum<T>.Create(FItems);
+  result := TTEnumerableEnum<T>.Create(FItems, ssSorted);
 end;
 
 { TDataSetEnumClass<T> }
@@ -1895,6 +1985,23 @@ end;
 procedure TStringEnum.Next;
 begin
   inc(FIdx);
+end;
+
+{ TArrayHelper }
+
+class function TArrayHelper.IndexOf<T>(const ATarget: TArray<T>; const [ref] AValue: T; AComparator: IComparer<T>; out idx: integer): boolean;
+var
+  i: integer;
+begin
+  for i := 0 to high(ATarget) do
+  begin
+    if AComparator.Compare(AValue, ATarget[i]) = 0 then
+    begin
+      idx := i;
+      exit(true);
+    end;
+  end;
+  exit(false);
 end;
 
 end.

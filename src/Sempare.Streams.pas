@@ -231,6 +231,9 @@ type
     /// <summary>
     function TakeOne: T;
 
+    /// <summary>
+    /// TryTakeOne returns a single element if present.
+    /// <summary>
     function TryTakeOne(out AValue: T): boolean;
 
     /// <summary>
@@ -247,6 +250,11 @@ type
     /// Equals returns true if all the items match another stream.
     /// <summary>
     function Equals(const [ref] AOther: TStreamOperation<T>): boolean;
+
+    /// <summary>
+    /// Cast a stream from one type to another
+    /// <summary>
+    function CastTo<TOther: class>(): TStreamOperation<TOther>;
 
     /// <summary>
     /// Take indicates that at most ANumber of items will be returned.
@@ -272,6 +280,21 @@ type
     /// Update applies a procedure to the items in the stream. (Update is an alias for Apply);
     /// <summary>
     procedure Update(const AFunction: TApplyFunction<T>); inline;
+
+    /// <summary>
+    /// Delete items from a target list based on values in the stream
+    /// <summary>
+    procedure Delete(const ATarget: TList<T>; AComparator: IComparer<T> = nil); overload;
+
+    /// <summary>
+    /// Delete items from a target array based on values in the stream
+    /// <summary>
+    procedure Delete(var ATarget: TArray<T>; AComparator: IComparer<T> = nil); overload;
+
+    /// <summary>
+    /// Delete items from a target dictionary based on key values in the stream
+    /// <summary>
+    procedure Delete<TValue>(const ATarget: TDictionary<T, TValue>); overload;
 
     /// <summary>
     /// Creates a cache of the items at this point so that the items can be enumerated again
@@ -353,27 +376,65 @@ type
     /// <summary>
     function GroupToArray<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>; overload;
 
-    // numeric
+    /// <summary>
+    /// Return  minimum value from a stream
+    /// <summary>
     function Min(): T; overload;
-    function Max(): T; overload;
-
+    /// <summary>
+    /// Return  the minimum value from a stream
+    /// <summary>
     function Min(const AComparer: TComparer<T>): T; overload;
-    function Max(const AComparer: TComparer<T>): T; overload;
+    /// <summary>
+    /// Return  the minimum value from a stream
+    /// <summary>
     function Min(AComparer: IComparer<T>): T; overload;
+
+    /// <summary>
+    /// Return  the maximum value from a stream
+    /// <summary>
+    function Max(): T; overload;
+    /// <summary>
+    /// Return  the maximum value from a stream
+    /// <summary>
+    function Max(const AComparer: TComparer<T>): T; overload;
+    /// <summary>
+    /// Return  the maximum value from a stream
+    /// <summary>
     function Max(AComparer: IComparer<T>): T; overload;
 
-    // boolean
+    /// <summary>
+    /// Return  true if the stream contains a value
+    /// <summary>
     function Contains(const [ref] AValue: T): boolean; overload;
+    /// <summary>
+    /// Return  true if the stream contains a value
+    /// <summary>
     function Contains(const [ref] AValue: T; AComparer: IComparer<T>): boolean; overload;
+    /// <summary>
+    /// Return  true if the stream contains a value
+    /// <summary>
     function Contains(const [ref] AValue: T; AComparer: IEqualityComparer<T>): boolean; overload;
+    /// <summary>
+    /// Return  true if the stream contains a value
+    /// <summary>
     function Contains(const [ref] AValue: T; AComparer: TEqualityComparer<T>): boolean; overload;
 
+    /// <summary>
+    /// Return  true when predicate true for all items in the stream
+    /// <summary>
     function All(const APredicate: TPredicate<T>): boolean;
+    /// <summary>
+    /// Return  true when predicate true for any item in the stream
+    /// <summary>
     function Any(const APredicate: TPredicate<T>): boolean;
 
-    // misc
-
+    /// <summary>
+    /// Return items in reverse order
+    /// <summary>
     function Reverse(): TStreamOperation<T>;
+    /// <summary>
+    /// Return items in random order
+    /// <summary>
     function Schuffle(): TStreamOperation<T>;
 
     /// <summary>
@@ -786,6 +847,11 @@ begin
     result := Enum.Cache<T>(FEnum);
 end;
 
+function TStreamOperation<T>.CastTo<TOther>: TStreamOperation<TOther>;
+begin
+  result := Enum.Cast<T, TOther>(FEnum);
+end;
+
 function TStreamOperation<T>.Contains(const [ref] AValue: T; AComparer: IComparer<T>): boolean;
 begin
   result := Enum.Contains<T>(FEnum, AValue, AComparer);
@@ -809,6 +875,21 @@ end;
 function TStreamOperation<T>.Count: integer;
 begin
   result := Enum.Count<T>(FEnum);
+end;
+
+procedure TStreamOperation<T>.Delete(const ATarget: TList<T>; AComparator: IComparer<T>);
+begin
+  Enum.Delete<T>(FEnum, ATarget, AComparator);
+end;
+
+procedure TStreamOperation<T>.Delete(var ATarget: TArray<T>; AComparator: IComparer<T>);
+begin
+  Enum.Delete<T>(FEnum, ATarget, AComparator);
+end;
+
+procedure TStreamOperation<T>.Delete<TValue>(const ATarget: TDictionary<T, TValue>);
+begin
+  Enum.Delete<T, TValue>(FEnum, ATarget);
 end;
 
 function TStreamOperation<T>.Distinct(AComparator: IComparer<T>): TStreamOperation<T>;
