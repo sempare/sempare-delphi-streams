@@ -65,7 +65,7 @@ type
     class function Count<T>(AEnum: IEnum<T>): integer; static;
     class function ToArray<T>(AEnum: IEnum<T>): TArray<T>; static;
     class function ToList<T>(AEnum: IEnum<T>): TList<T>; static;
-    class procedure Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyFunction<T>); static;
+    class procedure Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyProc<T>); static;
     class function IsCached<T>(AEnum: IEnum<T>): boolean; static;
     class function TryGetCached<T>(AEnum: IEnum<T>; out ACachedEnum: IEnum<T>): boolean; static;
     class function Cache<T>(AEnum: IEnum<T>): IEnum<T>; overload; static;
@@ -103,7 +103,7 @@ type
     class function Cast<TInput; TOutput: class>(AEnum: IEnum<TInput>): IEnum<TOutput>;
 
     class procedure Delete<T>(AEnum: IEnum<T>; const ATarget: TList<T>; AComparator: IComparer<T>); overload;
-    class procedure Delete<T>(AEnum: IEnum<T>; var ATarget: TArray<T>; AComparator: IComparer<T>);  overload;
+    class procedure Delete<T>(AEnum: IEnum<T>; var ATarget: TArray<T>; AComparator: IComparer<T>); overload;
     class procedure Delete<T, TValue>(AEnum: IEnum<T>; const ATarget: TDictionary<T, TValue>); overload;
 
     // grouping
@@ -356,9 +356,9 @@ type
   /// </summary>
   TApplyEnum<T> = class(TBaseEnum<T>)
   private
-    FApply: TApplyFunction<T>;
+    FApply: TApplyProc<T>;
   public
-    constructor Create(AEnum: IEnum<T>; const AApply: TApplyFunction<T>);
+    constructor Create(AEnum: IEnum<T>; const AApply: TApplyProc<T>);
     function Current: T; override;
   end;
 
@@ -494,18 +494,16 @@ type
     procedure Next; override;
   end;
 
-implementation
-
-uses
-  Sempare.Streams,
-  Sempare.Streams.Rtti;
-
-type
   TArrayHelper = class helper for TArray
     class function IndexOf<T>(const ATarget: TArray<T>; const [ref] AValue: T; AComparator: IComparer<T>; out idx: integer): boolean; static;
   end;
 
-  { TArrayEnum<T> }
+implementation
+
+uses
+  Sempare.Streams.Rtti;
+
+{ TArrayEnum<T> }
 
 constructor TArrayEnum<T>.Create(const AData: TArray<T>);
 begin
@@ -525,7 +523,7 @@ end;
 
 function TArrayEnum<T>.GetCache: TList<T>;
 begin
-  result := Stream.From<T>(FData).ToList;
+  result := Enum.ToList<T>(TArrayEnum<T>.Create(FData));
 end;
 
 function TArrayEnum<T>.GetEnum: IEnum<T>;
@@ -809,7 +807,7 @@ end;
 
 { TApplyEnum<T> }
 
-constructor TApplyEnum<T>.Create(AEnum: IEnum<T>; const AApply: TApplyFunction<T>);
+constructor TApplyEnum<T>.Create(AEnum: IEnum<T>; const AApply: TApplyProc<T>);
 begin
   inherited Create(AEnum);
   FApply := AApply;
@@ -905,7 +903,7 @@ begin
   exit(false);
 end;
 
-class procedure Enum.Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyFunction<T>);
+class procedure Enum.Apply<T>(AEnum: IEnum<T>; const AFunc: TApplyProc<T>);
 var
   v: T;
   e: IEnum<T>;
@@ -1298,7 +1296,7 @@ begin
     items[i] := items[j];
     items[j] := tmp;
   end;
-  result := Stream.From<T>(items);
+  result := TArrayEnum<T>.Create(items);
 end;
 
 class function Enum.Schuffle<T>(AEnum: IEnum<T>): IEnum<T>;
@@ -1317,7 +1315,7 @@ begin
     items[i] := items[j];
     items[j] := tmp;
   end;
-  result := Stream.From<T>(items);
+  result := TArrayEnum<T>.Create(items);
 end;
 
 class function Enum.Sum(AEnum: IEnum<int64>): int64;
@@ -1803,7 +1801,7 @@ end;
 constructor TDataSetEnumClass<T>.Create(const ADataSet: TDataSet);
 var
   attrib: TCustomAttribute;
-  Field: trttifield;
+  Field: TRttiField;
   fieldname: string;
 begin
   FDataSet := ADataSet;
@@ -1830,7 +1828,7 @@ end;
 
 function TDataSetEnumClass<T>.Current: T;
 var
-  Field: trttifield;
+  Field: TRttiField;
   obj: TObject;
 begin
   obj := FConstructor.Invoke(FRttiType.AsInstance.MetaclassType, []).AsObject;
@@ -1862,7 +1860,7 @@ end;
 constructor TDataSetEnumRecord<T>.Create(const ADataSet: TDataSet);
 var
   attrib: TCustomAttribute;
-  Field: trttifield;
+  Field: TRttiField;
   fieldname: string;
 begin
   FDataSet := ADataSet;
@@ -1888,7 +1886,7 @@ end;
 
 function TDataSetEnumRecord<T>.Current: T;
 var
-  Field: trttifield;
+  Field: TRttiField;
 
 begin
   fillchar(result, sizeof(T), 0);

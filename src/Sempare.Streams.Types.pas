@@ -56,7 +56,7 @@ type
   // AInput is var rather than const [ref] to simplify what developers have to type.
   // It is a minor optimisation when records are used. Note that
   // you can change values in AInput, but changes to AInput itself will have no result.
-  TApplyFunction<TInput> = reference to procedure(var AInput: TInput);
+  TApplyProc<TInput> = reference to procedure(var AInput: TInput);
   FValueFilter = reference to function(const AValue: TValue): boolean;
 
   TExprType = (etUnary, etBinary, etField, etBoolean, etFilter);
@@ -126,6 +126,24 @@ type
     function IsTrue(const AValue: T): boolean;
   end;
 
+  /// <summary>
+  /// StreamRef attribute allows for referencing fields between a class definition and the metadata record.
+  /// </summary>
+  StreamFieldAttribute = class(TCustomAttribute)
+  private
+    FName: string;
+  public
+    constructor Create(const AName: string);
+    property name: string read FName;
+  end;
+
 implementation
+
+{ StreamFieldAttribute }
+
+constructor StreamFieldAttribute.Create(const AName: string);
+begin
+  FName := AName;
+end;
 
 end.
