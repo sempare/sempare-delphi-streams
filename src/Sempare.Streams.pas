@@ -274,12 +274,12 @@ type
     /// <summary>
     /// Apply applies a procedure to the items in the stream.
     /// <summary>
-    procedure Apply(const AFunction: TApplyFunction<T>);
+    procedure Apply(const AFunction: TApplyProc<T>);
 
     /// <summary>
     /// Update applies a procedure to the items in the stream. (Update is an alias for Apply);
     /// <summary>
-    procedure Update(const AFunction: TApplyFunction<T>); inline;
+    procedure Update(const AFunction: TApplyProc<T>); inline;
 
     /// <summary>
     /// Delete items from a target list based on values in the stream
@@ -536,16 +536,7 @@ type
     class function ReflectMetadata<TMetadata: record; T>(): TMetadata; static;
   end;
 
-  /// <summary>
-  /// StreamRef attribute allows for referencing fields between a class definition and the metadata record.
-  /// </summary>
-  StreamFieldAttribute = class(TCustomAttribute)
-  private
-    FName: string;
-  public
-    constructor Create(const AName: string);
-    property Name: string read FName;
-  end;
+  StreamFieldAttribute = Sempare.Streams.Types.StreamFieldAttribute;
 
 function Field(const AName: string): TFieldExpression; overload;
 function Field(const AName: string; const AOrder: TSortOrder): TSortExpression; overload;
@@ -1129,7 +1120,7 @@ begin
   result := TUniqueEnum<T>.Create(FEnum, AComparator);
 end;
 
-procedure TStreamOperation<T>.Update(const AFunction: TApplyFunction<T>);
+procedure TStreamOperation<T>.Update(const AFunction: TApplyProc<T>);
 begin
   Apply(AFunction);
 end;
@@ -1159,7 +1150,7 @@ begin
   result := Enum.Any<T>(FEnum, APredicate);
 end;
 
-procedure TStreamOperation<T>.Apply(const AFunction: TApplyFunction<T>);
+procedure TStreamOperation<T>.Apply(const AFunction: TApplyProc<T>);
 begin
   Enum.Apply<T>(FEnum, AFunction);
 end;
@@ -1278,13 +1269,6 @@ end;
 class function Stream.From<T>(ASource: System.IEnumerable<T>): TStreamOperation<T>;
 begin
   result := TIEnumerableEnum<T>.Create(ASource);
-end;
-
-{ StreamFieldAttribute }
-
-constructor StreamFieldAttribute.Create(const AName: string);
-begin
-  FName := AName;
 end;
 
 end.
