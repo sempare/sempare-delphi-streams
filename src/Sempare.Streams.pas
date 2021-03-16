@@ -363,6 +363,25 @@ type
     /// <summary>
     function Where(const ACondition: TFilterFunction<T>): TStreamOperation<T>; overload;
 
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+    /// <summary>
+    /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
+    /// <summary>
+    function IGroupBy<TKeyType>(AField: TFieldExpression): IDictionary<TKeyType, T>; overload;
+    /// <summary>
+    /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
+    /// <summary>
+    function IGroupBy<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, TValueType>; overload;
+    /// <summary>
+    /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
+    /// <summary>
+    function IGroupToLists<TKeyType>(AField: TFieldExpression): IDictionary<TKeyType, IList<T>>; overload;
+    /// <summary>
+    /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
+    /// <summary>
+    function IGroupToLists<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, IList<TValueType>>; overload;
+
+{$ENDIF}
     /// <summary>
     /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
     /// <summary>
@@ -922,6 +941,30 @@ class operator TStreamOperation<T>.Implicit(Enum: IEnum<T>): TStreamOperation<T>
 begin
   result.FEnum := Enum;
 end;
+
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+
+function TStreamOperation<T>.IGroupBy<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, TValueType>;
+begin
+  exit(Enum.IGroupBy<T, TKeyType, TValueType>(FEnum, AField.FieldExpr, AFunction));
+end;
+
+function TStreamOperation<T>.IGroupBy<TKeyType>(AField: TFieldExpression): IDictionary<TKeyType, T>;
+begin
+  exit(Enum.IGroupBy<T, TKeyType>(FEnum, AField.FieldExpr));
+end;
+
+function TStreamOperation<T>.IGroupToLists<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, IList<TValueType>>;
+begin
+  exit(Enum.IGroupToLists<T, TKeyType, TValueType>(FEnum, AField.FieldExpr, AFunction));
+end;
+
+function TStreamOperation<T>.IGroupToLists<TKeyType>(AField: TFieldExpression): IDictionary<TKeyType, IList<T>>;
+begin
+  exit(Enum.IGroupToLists<T, TKeyType>(FEnum, AField.FieldExpr));
+end;
+
+{$ENDIF}
 
 function TStreamOperation<T>.GroupBy<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>;
 begin

@@ -111,6 +111,13 @@ type
     class procedure Delete<T, TValue>(AEnum: IEnum<T>; const ATarget: TDictionary<T, TValue>); overload;
 
     // grouping
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+    class function IGroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): IDictionary<TKeyType, T>; overload; static;
+    class function IGroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, TValueType>; overload; static;
+    class function IGroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): IDictionary<TKeyType, IList<T>>; overload; static;
+    class function IGroupToLists<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, IList<TValueType>>;
+      overload; static;
+{$ENDIF}
     class function GroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, T>; overload; static;
     class function GroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>; overload; static;
     class function GroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TList<T>>; overload; static;
@@ -1058,6 +1065,75 @@ begin
     end;
   end;
 end;
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+
+class function Enum.IGroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): IDictionary<TKeyType, T>;
+begin
+  exit(Enum.IGroupBy<T, TKeyType, T>(AEnum, AField,
+    function(const A: T): T
+    begin
+      exit(A);
+    end));
+end;
+
+class function Enum.IGroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, TValueType>;
+var
+  extractor: IFieldExtractor;
+  valueT: T;
+  val, keyVal: TValue;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  result := TCollections.CreateDictionary<TKeyType, TValueType>();
+  extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
+  while e.HasMore do
+  begin
+    valueT := e.Current;
+    val := TValue.From<T>(valueT);
+    extractor.GetValue(val, keyVal);
+    result.AddOrSetValue(keyVal.AsType<TKeyType>(), AFunction(valueT));
+  end;
+end;
+
+class function Enum.IGroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): IDictionary<TKeyType, IList<T>>;
+begin
+  exit(Enum.IGroupToLists<T, TKeyType, T>(AEnum, AField,
+    function(const A: T): T
+    begin
+      exit(A);
+    end));
+end;
+
+class function Enum.IGroupToLists<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, IList<TValueType>>;
+var
+  extractor: IFieldExtractor;
+  valueT: T;
+  val, keyVal: TValue;
+  lst: IList<TValueType>;
+  key: TKeyType;
+  e: IEnum<T>;
+begin
+  if not Enum.TryGetCached<T>(AEnum, e) then
+    e := AEnum;
+  result := TCollections.CreateDictionary<TKeyType, IList<TValueType>>;
+  extractor := StreamCache.getextractor(rttictx.gettype(typeinfo(T)), AField.Field);
+  while e.HasMore do
+  begin
+    valueT := e.Current;
+    val := TValue.From<T>(valueT);
+    if not extractor.GetValue(val, keyVal) then
+      raise EStream.CreateFmt('Key ''%s'' not found', [AField.Field]);
+    key := keyVal.AsType<TKeyType>();
+    if not result.TryGetValue(key, lst) then
+    begin
+      lst := TCollections.CreateList<TValueType>();
+      result.Add(key, lst);
+    end;
+    lst.Add(AFunction(valueT));
+  end;
+end;
+{$ENDIF}
 
 class function Enum.GroupBy<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>;
 var
