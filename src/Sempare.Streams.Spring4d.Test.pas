@@ -52,22 +52,28 @@ type
     [Teardown]
     procedure Teardown; override;
 
-        [Test]
+    [Test]
     procedure TestEmptyList;
-
 
     [Test]
     procedure TestList;
 
     [Test]
     procedure TestSet;
+
+    [Test]
+    procedure ToList;
+
+    [Test]
+    procedure ToSet;
+
   end;
 
 implementation
 
 uses
   Spring.Collections,
-  Sempare.Streams.Spring4d;
+  Sempare.Streams;
 
 { TSpring4dStreamTest }
 
@@ -86,7 +92,7 @@ end;
 procedure TSpring4dStreamTest.TestEmptyList;
 var
   l: IList<Integer>;
-  lst : TArray<integer>;
+  lst: TArray<Integer>;
 begin
   l := TCollections.CreateList<Integer>;
   Assert.IsTrue( //
@@ -116,10 +122,37 @@ begin
     .Equals(Stream.From<Integer>(l)));
 end;
 
+procedure TSpring4dStreamTest.ToList;
+var
+  l: IList<Integer>;
+  l2: IList<Integer>;
+begin
+  l := TCollections.CreateList<Integer>;
+  l.AddRange([1, 2, 3, 4, 5]);
+
+  l2 := Stream.From<Integer>([1, 2, 3, 4, 5]).ToIList();
+
+  Assert.IsTrue( //
+    Stream.From<Integer>(l2) //
+    .Equals(Stream.From<Integer>(l)));
+end;
+
+procedure TSpring4dStreamTest.ToSet;
+var
+  l: ISet<Integer>;
+  l2: ISet<Integer>;
+begin
+  l := TCollections.CreateSet<Integer>;
+  l.AddRange([1, 2, 3, 4, 5]);
+
+  l2 := Stream.From<Integer>([1, 2, 3, 4, 5]).ToISet();
+
+  Assert.IsTrue( //
+    Stream.From<Integer>(l2).Equals(Stream.From<Integer>(l)));
+end;
 
 initialization
 
 TDUnitX.RegisterTestFixture(TSpring4dStreamTest);
-
 
 end.

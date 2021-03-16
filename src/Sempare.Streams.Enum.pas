@@ -58,6 +58,10 @@ type
   /// <summary>
   Enum = class
   public
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+    class procedure CopyFromEnum<T>(ASource: IEnum<T>; ATarget: Spring.Collections.ICollection<T>); static;
+    class function FromSpring4D<T>(ASource: Spring.Collections.IEnumerable<T>): IEnum<T>; static;
+{$ENDIF}
     class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean; overload; static;
     class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IComparer<T>): boolean; overload; static;
     class function AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IEqualityComparer<T>): boolean; overload; static;
@@ -513,22 +517,22 @@ end;
 
 function TArrayEnum<T>.Current: T;
 begin
-  result := FData[FOffset];
+  exit(FData[FOffset]);
 end;
 
 function TArrayEnum<T>.EOF: boolean;
 begin
-  result := FOffset = length(FData);
+  exit(FOffset = length(FData));
 end;
 
 function TArrayEnum<T>.GetCache: TList<T>;
 begin
-  result := Enum.ToList<T>(TArrayEnum<T>.Create(FData));
+  exit(Enum.ToList<T>(TArrayEnum<T>.Create(FData)));
 end;
 
 function TArrayEnum<T>.GetEnum: IEnum<T>;
 begin
-  result := TArrayEnum<T>.Create(FData);
+  exit(TArrayEnum<T>.Create(FData));
 end;
 
 procedure TArrayEnum<T>.Next;
@@ -549,7 +553,7 @@ end;
 
 function TIEnumerableEnum<T>.Current: T;
 begin
-  result := FEnum.Current;
+  exit(FEnum.Current);
 end;
 
 destructor TIEnumerableEnum<T>.Destroy;
@@ -560,7 +564,7 @@ end;
 
 function TIEnumerableEnum<T>.EOF: boolean;
 begin
-  result := FEof;
+  exit(FEof);
 end;
 
 procedure TIEnumerableEnum<T>.Next;
@@ -580,7 +584,7 @@ end;
 
 function TSpringIEnumerableEnum<T>.Current: T;
 begin
-  result := FEnum.Current;
+  exit(FEnum.Current);
 end;
 
 destructor TSpringIEnumerableEnum<T>.Destroy;
@@ -591,7 +595,7 @@ end;
 
 function TSpringIEnumerableEnum<T>.EOF: boolean;
 begin
-  result := FEof;
+  exit(FEof);
 end;
 
 procedure TSpringIEnumerableEnum<T>.Next;
@@ -610,7 +614,7 @@ end;
 
 function TBaseEnum<T>.Current: T;
 begin
-  result := FEnum.Current;
+  exit(FEnum.Current);
 end;
 
 destructor TBaseEnum<T>.Destroy;
@@ -621,7 +625,7 @@ end;
 
 function TBaseEnum<T>.EOF: boolean;
 begin
-  result := FEnum.EOF;
+  exit(FEnum.EOF);
 end;
 
 procedure TBaseEnum<T>.Next;
@@ -645,7 +649,7 @@ end;
 
 function TFilterEnum<T>.Current: T;
 begin
-  result := FNext;
+  exit(FNext);
 end;
 
 destructor TFilterEnum<T>.Destroy;
@@ -656,7 +660,7 @@ end;
 
 function TFilterEnum<T>.EOF: boolean;
 begin
-  result := FEnum.EOF and not FHasValue;
+  exit(FEnum.EOF and not FHasValue);
 end;
 
 procedure TFilterEnum<T>.Next;
@@ -701,7 +705,7 @@ end;
 
 function TTake<T>.EOF: boolean;
 begin
-  result := FEnum.EOF or FEof;
+  exit(FEnum.EOF or FEof);
 end;
 
 procedure TTake<T>.Next;
@@ -725,7 +729,7 @@ end;
 
 function TMapEnum<TInput, TOutput>.Current: TOutput;
 begin
-  result := FMapper(FEnum.Current)
+  exit(FMapper(FEnum.Current));
 end;
 
 destructor TMapEnum<TInput, TOutput>.Destroy;
@@ -736,7 +740,7 @@ end;
 
 function TMapEnum<TInput, TOutput>.EOF: boolean;
 begin
-  result := FEnum.EOF;
+  exit(FEnum.EOF);
 end;
 
 procedure TMapEnum<TInput, TOutput>.Next;
@@ -797,12 +801,12 @@ end;
 
 function TEnumCache<T>.GetCache: TList<T>;
 begin
-  result := FCache;
+  exit(FCache);
 end;
 
 function TEnumCache<T>.GetEnum: IEnum<T>;
 begin
-  result := TCachedEnum<T>.Create(self);
+  exit(TCachedEnum<T>.Create(self));
 end;
 
 { TApplyEnum<T> }
@@ -831,7 +835,7 @@ begin
   if FFirst then
     Next;
   FFirst := true;
-  result := not EOF;
+  exit(not EOF);
 end;
 
 { Enum }
@@ -923,12 +927,12 @@ var
 begin
   if Enum.TryGetCached<T>(AEnum, res) then
     exit(res);
-  result := TEnumCache<T>.Create(AEnum).GetEnum;
+  exit(TEnumCache<T>.Create(AEnum).GetEnum);
 end;
 
 class function Enum.Cache<T>(AEnum: TList<T>): IEnum<T>;
 begin
-  result := TEnumCache<T>.Create(AEnum).GetEnum;
+  exit(TEnumCache<T>.Create(AEnum).GetEnum);
 end;
 
 class function Enum.Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T; AComparer: IComparer<T>): boolean;
@@ -975,7 +979,7 @@ end;
 
 class function Enum.Contains<T>(AEnum: IEnum<T>; const [ref] AValue: T): boolean;
 begin
-  result := Enum.Contains<T>(AEnum, AValue, System.Generics.Defaults.TComparer<T>.Default);
+  exit(Enum.Contains<T>(AEnum, AValue, System.Generics.Defaults.TComparer<T>.Default));
 end;
 
 class function Enum.Count<T>(AEnum: IEnum<T>): integer;
@@ -1077,11 +1081,11 @@ end;
 
 class function Enum.GroupBy<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, T>;
 begin
-  result := Enum.GroupBy<T, TKeyType, T>(AEnum, AField,
+  exit(Enum.GroupBy<T, TKeyType, T>(AEnum, AField,
     function(const A: T): T
     begin
-      result := A;
-    end);
+      exit(A);
+    end));
 end;
 
 class function Enum.GroupToArray<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TArray<TValueType>>;
@@ -1119,11 +1123,11 @@ end;
 
 class function Enum.GroupToArray<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TArray<T>>;
 begin
-  result := Enum.GroupToArray<T, TKeyType, T>(AEnum, AField,
+  exit(Enum.GroupToArray<T, TKeyType, T>(AEnum, AField,
     function(const A: T): T
     begin
-      result := A;
-    end);
+      exit(A);
+    end));
 end;
 
 class function Enum.GroupToLists<T, TKeyType, TValueType>(AEnum: IEnum<T>; AField: IFieldExpr; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TList<TValueType>>;
@@ -1157,11 +1161,11 @@ end;
 
 class function Enum.GroupToLists<T, TKeyType>(AEnum: IEnum<T>; AField: IFieldExpr): TDictionary<TKeyType, TList<T>>;
 begin
-  result := Enum.GroupToLists<T, TKeyType, T>(AEnum, AField,
+  exit(Enum.GroupToLists<T, TKeyType, T>(AEnum, AField,
     function(const A: T): T
     begin
-      result := A;
-    end);
+      exit(A);
+    end));
 end;
 
 class function Enum.IsCached<T>(AEnum: IEnum<T>): boolean;
@@ -1169,7 +1173,7 @@ var
   o: TObject;
 begin
   o := AEnum as TObject;
-  result := AEnum is TCachedEnum<T>;
+  exit(AEnum is TCachedEnum<T>);
 end;
 
 class function Enum.Map<T, TOutput>(AEnum: IEnum<T>; const AFunction: TMapFunction<T, TOutput>): TArray<TOutput>;
@@ -1185,7 +1189,7 @@ end;
 
 class function Enum.Max<T>(AEnum: IEnum<T>): T;
 begin
-  result := Enum.Max<T>(AEnum, System.Generics.Defaults.TComparer<T>.Default);
+  exit(Enum.Max<T>(AEnum, System.Generics.Defaults.TComparer<T>.Default));
 end;
 
 class function Enum.Max<T>(AEnum: IEnum<T>; AComparer: IComparer<T>): T;
@@ -1296,7 +1300,7 @@ begin
     items[i] := items[j];
     items[j] := tmp;
   end;
-  result := TArrayEnum<T>.Create(items);
+  exit(TArrayEnum<T>.Create(items));
 end;
 
 class function Enum.Schuffle<T>(AEnum: IEnum<T>): IEnum<T>;
@@ -1315,7 +1319,7 @@ begin
     items[i] := items[j];
     items[j] := tmp;
   end;
-  result := TArrayEnum<T>.Create(items);
+  exit(TArrayEnum<T>.Create(items));
 end;
 
 class function Enum.Sum(AEnum: IEnum<int64>): int64;
@@ -1340,9 +1344,24 @@ begin
     result := result + e.Current;
 end;
 
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+
+class procedure Enum.CopyFromEnum<T>(ASource: IEnum<T>; ATarget: Spring.Collections.ICollection<T>);
+begin
+  while ASource.HasMore do
+    ATarget.Add(ASource.Current);
+end;
+
+class function Enum.FromSpring4D<T>(ASource: Spring.Collections.IEnumerable<T>): IEnum<T>;
+begin
+  exit(TSpringIEnumerableEnum<T>.Create(ASource));
+end;
+
+{$ENDIF}
+
 class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>): boolean;
 begin
-  result := Enum.AreEqual<T>(AEnumA, AEnumB, System.Generics.Defaults.TComparer<T>.Default);
+  exit(Enum.AreEqual<T>(AEnumA, AEnumB, System.Generics.Defaults.TComparer<T>.Default));
 end;
 
 class function Enum.AreEqual<T>(AEnumA, AEnumB: IEnum<T>; comparator: IComparer<T>): boolean;
@@ -1406,16 +1425,16 @@ end;
 
 class function Enum.Cache<T>(AEnum: TEnumerable<T>): IEnum<T>;
 begin
-  result := TEnumCache<T>.Create(AEnum).GetEnum;
+  exit(TEnumCache<T>.Create(AEnum).GetEnum);
 end;
 
 class function Enum.Cast<TInput, TOutput>(AEnum: IEnum<TInput>): IEnum<TOutput>;
 begin
-  result := TMapEnum<TInput, TOutput>.Create(AEnum,
+  exit(TMapEnum<TInput, TOutput>.Create(AEnum,
     function(const AInput: TInput): TOutput
     begin
-      result := AInput as TOutput;
-    end);
+      exit(AInput as TOutput);
+    end));
 end;
 
 class function Enum.Average(AEnum: IEnum<int64>): extended;
@@ -1433,7 +1452,7 @@ begin
     inc(c);
   end;
   if c <> 0 then
-    result := result / c;
+    exit(result / c);
 end;
 
 class function Enum.Average(AEnum: IEnum<extended>): extended;
@@ -1451,7 +1470,7 @@ begin
     inc(c);
   end;
   if c <> 0 then
-    result := result / c;
+    exit(result / c);
 end;
 { TCachedEnum<T> }
 
@@ -1464,7 +1483,7 @@ end;
 
 function TCachedEnum<T>.Current: T;
 begin
-  result := FEnum.Current;
+  exit(FEnum.Current);
 end;
 
 destructor TCachedEnum<T>.Destroy;
@@ -1476,17 +1495,17 @@ end;
 
 function TCachedEnum<T>.EOF: boolean;
 begin
-  result := FEnum.EOF;
+  exit(FEnum.EOF);
 end;
 
 function TCachedEnum<T>.GetCache: TList<T>;
 begin
-  result := FCache.GetCache;
+  exit(FCache.GetCache);
 end;
 
 function TCachedEnum<T>.GetEnum: IEnum<T>;
 begin
-  result := TCachedEnum<T>.Create(FCache);
+  exit(TCachedEnum<T>.Create(FCache));
 end;
 
 procedure TCachedEnum<T>.Next;
@@ -1506,7 +1525,7 @@ end;
 
 function TTEnumerableEnum<T>.Current: T;
 begin
-  result := FEnum.Current;
+  exit(FEnum.Current);
 end;
 
 destructor TTEnumerableEnum<T>.Destroy;
@@ -1517,12 +1536,12 @@ end;
 
 function TTEnumerableEnum<T>.EOF: boolean;
 begin
-  result := FEof;
+  exit(FEof);
 end;
 
 function TTEnumerableEnum<T>.GetSortedStatus: TSortedStatus;
 begin
-  result := FSortedStatus;
+  exit(FSortedStatus);
 end;
 
 procedure TTEnumerableEnum<T>.Next;
@@ -1555,12 +1574,12 @@ end;
 
 function TSortedEnum<T>.GetCache: TList<T>;
 begin
-  result := FItems;
+  exit(FItems);
 end;
 
 function TSortedEnum<T>.GetEnum: IEnum<T>;
 begin
-  result := TTEnumerableEnum<T>.Create(FItems, ssSorted);
+  exit(TTEnumerableEnum<T>.Create(FItems, ssSorted));
 end;
 
 { TJoinEnum<TLeft, TRight, TJoined> }
@@ -1581,7 +1600,7 @@ end;
 
 function TJoinEnum<TLeft, TRight, TJoined>.Current: TJoined;
 begin
-  result := FNext;
+  exit(FNext);
 end;
 
 destructor TJoinEnum<TLeft, TRight, TJoined>.Destroy;
@@ -1593,7 +1612,7 @@ end;
 
 function TJoinEnum<TLeft, TRight, TJoined>.EOF: boolean;
 begin
-  result := not FHasNext;
+  exit(not FHasNext);
 end;
 
 procedure TJoinEnum<TLeft, TRight, TJoined>.FindNext;
@@ -1651,7 +1670,7 @@ end;
 
 function TUnionEnum<T>.Current: T;
 begin
-  result := FEnums[FIdx].Current;
+  exit(FEnums[FIdx].Current);
 end;
 
 destructor TUnionEnum<T>.Destroy;
@@ -1664,7 +1683,7 @@ function TUnionEnum<T>.EOF: boolean;
 begin
   if (length(FEnums) = 0) or (FIdx >= length(FEnums)) then
     exit(true);
-  result := FEnums[FIdx].EOF;
+  exit(FEnums[FIdx].EOF);
 end;
 
 procedure TUnionEnum<T>.Next;
@@ -1691,12 +1710,11 @@ begin
   FHasRight := FEnumRight.HasMore;
   FFoundRight := false;
   FindNext;
-
 end;
 
 function TLeftJoinEnum<TLeft, TRight, TJoined>.Current: TJoined;
 begin
-  result := FNext;
+  exit(FNext);
 end;
 
 destructor TLeftJoinEnum<TLeft, TRight, TJoined>.Destroy;
@@ -1708,7 +1726,7 @@ end;
 
 function TLeftJoinEnum<TLeft, TRight, TJoined>.EOF: boolean;
 begin
-  result := not FHasNext;
+  exit(not FHasNext);
 end;
 
 procedure TLeftJoinEnum<TLeft, TRight, TJoined>.FindNext;
@@ -1788,12 +1806,12 @@ end;
 
 function TUniqueEnum<T>.GetCache: TList<T>;
 begin
-  result := FItems;
+  exit(FItems);
 end;
 
 function TUniqueEnum<T>.GetEnum: IEnum<T>;
 begin
-  result := TTEnumerableEnum<T>.Create(FItems, ssSorted);
+  exit(TTEnumerableEnum<T>.Create(FItems, ssSorted));
 end;
 
 { TDataSetEnumClass<T> }
@@ -1823,7 +1841,6 @@ begin
     end;
     FFields.AddOrSetValue(Field.Name, fieldname);
   end;
-
 end;
 
 function TDataSetEnumClass<T>.Current: T;
@@ -1847,7 +1864,7 @@ end;
 
 function TDataSetEnumClass<T>.EOF: boolean;
 begin
-  result := FDataSet.EOF;
+  exit(FDataSet.EOF);
 end;
 
 procedure TDataSetEnumClass<T>.Next;
@@ -1904,7 +1921,7 @@ end;
 
 function TDataSetEnumRecord<T>.EOF: boolean;
 begin
-  result := FDataSet.EOF;
+  exit(FDataSet.EOF);
 end;
 
 procedure TDataSetEnumRecord<T>.Next;
@@ -1924,12 +1941,12 @@ end;
 
 function TIntRangeEnum.Current: int64;
 begin
-  result := FIdx;
+  exit(FIdx);
 end;
 
 function TIntRangeEnum.EOF: boolean;
 begin
-  result := FIdx > FEnd;
+  exit(FIdx > FEnd);
 end;
 
 procedure TIntRangeEnum.Next;
@@ -1948,12 +1965,12 @@ end;
 
 function TFloatRangeEnum.Current: extended;
 begin
-  result := FIdx;
+  exit(FIdx);
 end;
 
 function TFloatRangeEnum.EOF: boolean;
 begin
-  result := FIdx > FEnd;
+  exit(FIdx > FEnd);
 end;
 
 procedure TFloatRangeEnum.Next;
@@ -1972,12 +1989,12 @@ end;
 
 function TStringEnum.Current: char;
 begin
-  result := FValue[FIdx];
+  exit(FValue[FIdx]);
 end;
 
 function TStringEnum.EOF: boolean;
 begin
-  result := FIdx > FEnd;
+  exit(FIdx > FEnd);
 end;
 
 procedure TStringEnum.Next;

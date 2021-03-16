@@ -32,7 +32,7 @@
  *                                                                            *
  ****************************************************************************%*)
 
- // Assume Spring4d not installed by default
+// Assume Spring4d not installed by default
 // Uncomment this define or define it as a compiler option if required.
 //{$DEFINE SEMPARE_STREAMS_SPRING4D_SUPPORT}
 

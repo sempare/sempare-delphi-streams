@@ -139,17 +139,17 @@ end;
 
 function TSortExpr.GetField: TRttiField;
 begin
-  result := FField;
+  exit(FField);
 end;
 
 function TSortExpr.GetName: string;
 begin
-  result := FName;
+  exit(FName);
 end;
 
 function TSortExpr.GetOrder: TSortOrder;
 begin
-  result := FOrder;
+  exit(FOrder);
 end;
 
 procedure TSortExpr.SetField(const Value: TRttiField);
@@ -166,11 +166,11 @@ begin
   avs := A.asstring;
   bvs := B.asstring;
   if avs < bvs then
-    result := -1
+    exit(-1)
   else if avs = bvs then
-    result := 0
+    exit(0)
   else
-    result := 1;
+    exit(1);
 end;
 
 { TIntegerComparer }
@@ -182,11 +182,11 @@ begin
   avs := A.AsInt64;
   bvs := B.AsInt64;
   if avs < bvs then
-    result := -1
+    exit(-1)
   else if avs = bvs then
-    result := 0
+    exit(0)
   else
-    result := 1;
+    exit(1);
 end;
 
 { TDoubleComparer }
@@ -198,11 +198,11 @@ begin
   avs := A.AsExtended;
   bvs := B.AsExtended;
   if avs < bvs then
-    result := -1
+    exit(-1)
   else if avs = bvs then
-    result := 0
+    exit(0)
   else
-    result := 1;
+    exit(1);
 end;
 
 { TBooleanComparer }
@@ -214,11 +214,11 @@ begin
   avs := A.AsBoolean;
   bvs := B.AsBoolean;
   if avs < bvs then
-    result := -1
+    exit(-1)
   else if avs = bvs then
-    result := 0
+    exit(0)
   else
-    result := 1;
+    exit(1);
 end;
 
 { TClassOrRecordComparer<T> }
@@ -243,7 +243,7 @@ begin
       cv := -cv;
     exit(cv);
   end;
-  result := 0;
+  exit(0);
 end;
 
 constructor TClassOrRecordComparer<T>.Create(AComparators: TArray<IComparer<TValue>>; AExprs: TArray<ISortExpr>; AExtractors: TArray<IFieldExtractor>);
@@ -303,7 +303,7 @@ end;
 
 function TReverseComparer<T>.Compare(const Left, Right: T): integer;
 begin
-  result := -FComparer.Compare(Left, Right);
+  exit(-FComparer.Compare(Left, Right));
 end;
 
 constructor TReverseComparer<T>.Create(Comparer: IComparer<T>);

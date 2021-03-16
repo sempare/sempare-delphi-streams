@@ -74,14 +74,14 @@ type
 
   TStreamsTestBase = class
   protected
-    Fpeople: TList<TPerson>;
-    Faddrs: TList<TAddr>;
-    Faddrs2: TList<TAddr>;
+    Fpeople: TArray<TPerson>;
+    Faddrs: TArray<TAddr>;
+    Faddrs2: TArray<TAddr>;
     FArr: TArray<TPerson>;
     fperson: TPerson;
-    function CreatePeople: TList<TPerson>;
-    function Createaddrs: TList<TAddr>;
-    function Createaddrs2: TList<TAddr>;
+    function CreatePeople: TArray<TPerson>;
+    function Createaddrs: TArray<TAddr>;
+    function Createaddrs2: TArray<TAddr>;
 
   public
     procedure Setup; virtual;
@@ -99,45 +99,35 @@ uses
 
 { TStreamsTestBase }
 
-function TStreamsTestBase.Createaddrs: TList<TAddr>;
+function TStreamsTestBase.Createaddrs: TArray<TAddr>;
 begin
-  result := TList<TAddr>.Create;
-  with result do
-  begin
-    Add(TAddr.Create(1, 'addr1'));
-    Add(TAddr.Create(2, 'addr2'));
-    Add(TAddr.Create(3, 'addr3'));
-    Add(TAddr.Create(4, 'addr4'));
-    Add(TAddr.Create(5, 'addr5'));
-  end;
+  result := nil;
+  insert(TAddr.Create(1, 'addr1'), result, length(result));
+  insert(TAddr.Create(2, 'addr2'), result, length(result));
+  insert(TAddr.Create(3, 'addr3'), result, length(result));
+  insert(TAddr.Create(4, 'addr4'), result, length(result));
+  insert(TAddr.Create(5, 'addr5'), result, length(result));
 end;
 
-function TStreamsTestBase.Createaddrs2: TList<TAddr>;
+function TStreamsTestBase.Createaddrs2: TArray<TAddr>;
 begin
-  result := TList<TAddr>.Create;
-  with result do
-  begin
-    Add(TAddr.Create(0, 'addr0'));
-    Add(TAddr.Create(2, 'addr2'));
-    Add(TAddr.Create(7, 'addr7'));
-    Add(TAddr.Create(8, 'addr8'));
-  end;
-
+  result := nil;
+  insert(TAddr.Create(0, 'addr0'), result, length(result));
+  insert(TAddr.Create(2, 'addr2'), result, length(result));
+  insert(TAddr.Create(7, 'addr7'), result, length(result));
+  insert(TAddr.Create(8, 'addr8'), result, length(result));
 end;
 
-function TStreamsTestBase.CreatePeople: TList<TPerson>;
+function TStreamsTestBase.CreatePeople: TArray<TPerson>;
 begin
-  result := TList<TPerson>.Create;
-  with result do
-  begin
-    Add(TPerson.Create(1, 'peter', 10, '7700', false, 1.2, 0));
-    Add(TPerson.Create(2, 'john', 15, '7705', false, 1.3, 1));
-    Add(TPerson.Create(3, 'mary', 14, '7800', false, 1.1, 2));
-    Add(TPerson.Create(4, 'matthew', 16, '8800', true, 1.2, 0));
-    Add(TPerson.Create(5, 'abraham', 12, '8800', true, 1.3, 4));
-    Add(TPerson.Create(6, 'grant', 16, '8845', true, 1.5, 4));
-    Add(TPerson.Create(7, 'john', 17, '7805', false, 1.0, 0));
-  end;
+  result := nil;
+  insert(TPerson.Create(1, 'peter', 10, '7700', false, 1.2, 0), result, length(result));
+  insert(TPerson.Create(2, 'john', 15, '7705', false, 1.3, 1), result, length(result));
+  insert(TPerson.Create(3, 'mary', 14, '7800', false, 1.1, 2), result, length(result));
+  insert(TPerson.Create(4, 'matthew', 16, '8800', true, 1.2, 0), result, length(result));
+  insert(TPerson.Create(5, 'abraham', 12, '8800', true, 1.3, 4), result, length(result));
+  insert(TPerson.Create(6, 'grant', 16, '8845', true, 1.5, 4), result, length(result));
+  insert(TPerson.Create(7, 'john', 17, '7805', false, 1.0, 0), result, length(result));
 end;
 
 procedure TStreamsTestBase.Setup;
@@ -150,23 +140,10 @@ begin
 end;
 
 procedure TStreamsTestBase.Teardown;
-var
-  i: integer;
-  a: TAddr;
 begin
-  fillchar(a, sizeof(TAddr), 0);
-  fillchar(fperson, sizeof(TPerson), 0);
-  for i := 0 to Fpeople.Count - 1 do
-  begin
-    Fpeople[i] := fperson;
-  end;
-  freeandnil(Fpeople);
-  for i := 0 to Faddrs.Count - 1 do
-    Faddrs[i] := a;
-  freeandnil(Faddrs);
-  for i := 0 to Faddrs2.Count - 1 do
-    Faddrs2[i] := a;
-  freeandnil(Faddrs2);
+  Fpeople := nil;
+  Faddrs := nil;
+  Faddrs2 := nil;
   FArr := nil;
 end;
 

@@ -178,14 +178,14 @@ begin
       .Equals(Stream.From<TPerson>(people).map<integer>(
       function(const aperson: TPerson): integer
       begin
-        result := aperson.Age;
+        exit(aperson.Age);
       end).Sort()));
 
     Assert.IsTrue(Stream.From<integer>([15, 10, 8]) //
       .Equals(Stream.From<TPerson>(people).map<integer>(
       function(const aperson: TPerson): integer
       begin
-        result := aperson.Age;
+        exit(aperson.Age)
       end).Sort(DESC)));
 
     Assert.IsTrue(Stream.From<integer>([8, 10, 15]) //
@@ -194,7 +194,7 @@ begin
       .map<integer>(
       function(const aperson: TPerson): integer
       begin
-        result := aperson.Age;
+        exit(aperson.Age)
       end)));
 
     Assert.IsTrue(Stream.From<integer>([15, 10, 8]) //
@@ -203,21 +203,21 @@ begin
       .map<integer>(
       function(const aperson: TPerson): integer
       begin
-        result := aperson.Age;
+        exit(aperson.Age)
       end)));
 
     Assert.IsTrue(Stream.From<string>(['john', 'mary', 'peter']) //
       .Equals(Stream.From<TPerson>(people).map<string>(
       function(const aperson: TPerson): string
       begin
-        result := aperson.name;
+        exit(aperson.name)
       end).Sort()));
 
     Assert.IsTrue(Stream.From<string>(['peter', 'mary', 'john']) //
       .Equals(Stream.From<TPerson>(people).map<string>(
       function(const aperson: TPerson): string
       begin
-        result := aperson.name;
+        exit(aperson.name)
       end).Sort(DESC)));
 
     Assert.IsTrue(Stream.From<string>(['john', 'mary', 'peter']) //
@@ -226,7 +226,7 @@ begin
       .map<string>(
       function(const aperson: TPerson): string
       begin
-        result := aperson.name;
+        exit(aperson.name)
       end)));
 
     Assert.IsTrue(Stream.From<string>(['peter', 'mary', 'john']) //
@@ -235,7 +235,7 @@ begin
       .map<string>(
       function(const aperson: TPerson): string
       begin
-        result := aperson.name;
+        exit(aperson.name)
       end)));
 
   finally

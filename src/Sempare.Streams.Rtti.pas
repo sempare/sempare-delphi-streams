@@ -219,7 +219,6 @@ var
   f: TRttiField;
   o: TObject;
 begin
-  Result := False;
   Value := AValue;
   for f in FRttiField do
   begin
@@ -241,6 +240,7 @@ begin
       exit(true);
     end;
   end;
+  exit(False);
 end;
 
 class function TObjectHelper.SupportsInterface<T>(out Intf: T): Boolean;
@@ -249,7 +249,6 @@ var
   IntfTypeInfo: ptypeinfo;
   I: Integer;
 begin
-  Result := False;
   intfTable := GetInterfaceTable;
   IntfTypeInfo := GetInterfaceTypeInfo(intfTable);
   for I := 0 to intfTable^.EntryCount - 1 do
@@ -267,7 +266,6 @@ var
   IntfTypeInfo: ptypeinfo;
   I: Integer;
 begin
-  Result := False;
   intfTable := AClass.GetInterfaceTable;
   IntfTypeInfo := GetInterfaceTypeInfo(intfTable);
   for I := 0 to intfTable^.EntryCount - 1 do

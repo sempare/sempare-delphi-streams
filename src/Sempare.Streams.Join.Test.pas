@@ -88,7 +88,7 @@ begin
     .FullJoin<TAddr, TJoinedPersons>(Stream.From<TAddr>(Faddrs2), //
     function(const a: TPerson; const b: TAddr): boolean
     begin
-      result := a.addrid = b.id;
+      exit(a.addrid = b.id);
     end,
     function(const a: TPerson; const b: TAddr): TJoinedPersons
     begin
@@ -106,7 +106,7 @@ begin
     .InnerJoin<TAddr, TJoinedPersons>(Stream.From<TAddr>(Faddrs), //
     function(const a: TPerson; const b: TAddr): boolean
     begin
-      result := a.addrid = b.id;
+      exit(a.addrid = b.id);
     end,
     function(const a: TPerson; const b: TAddr): TJoinedPersons
     begin
@@ -132,7 +132,7 @@ begin
     .LeftJoin<TAddr, TJoinedPersons>(Stream.From<TAddr>(Faddrs), //
     function(const a: TPerson; const b: TAddr): boolean
     begin
-      result := a.addrid = b.id;
+      exit(a.addrid = b.id);
     end,
     function(const a: TPerson; const b: TAddr): TJoinedPersons
     begin
@@ -172,7 +172,7 @@ begin
     .RightJoin<TAddr, TJoinedPersons>(Stream.From<TAddr>(Faddrs2), //
     function(const a: TPerson; const b: TAddr): boolean
     begin
-      result := a.addrid = b.id;
+      exit(a.addrid = b.id);
     end,
     function(const a: TPerson; const b: TAddr): TJoinedPersons
     begin

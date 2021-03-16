@@ -178,7 +178,7 @@ begin
 
       function(const avalue: integer): TInt
       begin
-        result := TInt.Create(avalue);
+        exit(TInt.Create(avalue));
       end), // TMapEnum
       function(const avalue: TInt): boolean
       begin

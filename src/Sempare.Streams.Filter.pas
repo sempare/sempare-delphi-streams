@@ -95,7 +95,7 @@ end;
 
 function TExprFilter<T>.IsTrue(const AData: TValue): boolean;
 begin
-  result := FExpr.IsTrue(AData);
+  exit(FExpr.IsTrue(AData));
 end;
 
 { TTypedFunctionFilter<T> }
@@ -107,14 +107,14 @@ end;
 
 function TTypedFunctionFilter<T>.IsTrue(const AData: TValue): boolean;
 begin
-  result := FFunction(AData.AsType<T>());
+  exit(FFunction(AData.AsType<T>()));
 end;
 
 { TFilterProcessor<T> }
 
 function TAbstractFilter<T>.IsTrue(const AData: T): boolean;
 begin
-  result := IsTrue(TValue.From<T>(AData));
+  exit(IsTrue(TValue.From<T>(AData)));
 end;
 
 end.
