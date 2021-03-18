@@ -6,7 +6,7 @@
         <MainSource>Sempare.Streams.Tester.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Android</Platform>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>37907</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
