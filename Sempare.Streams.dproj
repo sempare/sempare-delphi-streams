@@ -127,13 +127,7 @@
         </DelphiCompile>
         <DCCReference Include="dbrtl.dcp"/>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="src\Sempare.Streams.Expr.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Filter.pas"/>
         <DCCReference Include="src\Sempare.Streams.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Rtti.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Sort.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Types.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Enum.pas"/>
         <None Include="src\Sempare.Streams.inc"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -169,6 +163,12 @@
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\iossimulator\libpcre.dylib" Class="DependencyModule">
                     <Platform Name="iOSSimulator">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\Sempare.Streams.bpl" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Sempare_Streams.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

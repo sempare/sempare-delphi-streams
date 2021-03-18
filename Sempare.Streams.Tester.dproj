@@ -5,8 +5,8 @@
         <FrameworkType>None</FrameworkType>
         <MainSource>Sempare.Streams.Tester.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Platform Condition="'$(Platform)'==''">Android</Platform>
         <TargetedPlatforms>37907</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
@@ -148,13 +148,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="src\Sempare.Streams.Expr.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Filter.pas"/>
         <DCCReference Include="src\Sempare.Streams.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Rtti.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Sort.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Types.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Enum.pas"/>
         <DCCReference Include="src\Sempare.Streams.Join.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Filter.Test.pas"/>
         <DCCReference Include="src\Sempare.Streams.Test.Common.pas"/>
@@ -199,9 +193,21 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
+                <DeployFile LocalName="README.md" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="LICENSE" Configuration="Release" Class="ProjectFile">
                     <Platform Name="OSX64">
                         <RemoteDir>Contents\Resources\StartUp\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="LICENSE" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -237,6 +243,18 @@
                 </DeployFile>
                 <DeployFile LocalName="OSX64\Debug\Sempare.Streams.Tester.entitlements" Configuration="Debug" Class="ProjectOSXEntitlements">
                     <Platform Name="OSX64">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="src\Sempare.Streams.inc" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win32\Release\Sempare.Streams.Tester.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Sempare_Streams_Tester.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -341,6 +359,12 @@
                 <DeployFile LocalName="src\Sempare.Streams.inc" Configuration="Release" Class="ProjectFile">
                     <Platform Name="OSX64">
                         <RemoteDir>Contents\Resources\StartUp\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="docs\ideas.md" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

@@ -92,9 +92,7 @@ type
 implementation
 
 uses
-  System.classes,
-  Sempare.Streams.Enum,
-  Sempare.Streams.Types;
+  System.classes;
 
 { TStreamsTestBase }
 

@@ -40,7 +40,6 @@ uses
   Sempare.Streams,
   System.Generics.Collections,
   System.SysUtils,
-  Sempare.Streams.Enum,
   Sempare.Streams.Test.Common,
   DUnitX.TestFramework;
 
@@ -132,9 +131,7 @@ implementation
 uses
   Data.DB,
   FireDAC.Comp.Client,
-  System.classes,
-
-  Sempare.Streams.Types;
+  System.classes;
 
 { TStreamEnumTest }
 

@@ -42,21 +42,21 @@ package Sempare.Streams;
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA ON}
 {$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
+{$LOCALSYMBOLS OFF}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
-{$OPTIMIZATION OFF}
+{$OPTIMIZATION ON}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
-{$REFERENCEINFO ON}
+{$REFERENCEINFO OFF}
 {$SAFEDIVIDE OFF}
-{$STACKFRAMES ON}
+{$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
 {$VARSTRINGCHECKS ON}
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DEFINE DEBUG}
+{$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
 {$IMPLICITBUILD ON}
 
@@ -65,12 +65,6 @@ requires
   rtl;
 
 contains
-  Sempare.Streams.Expr in 'src\Sempare.Streams.Expr.pas',
-  Sempare.Streams.Filter in 'src\Sempare.Streams.Filter.pas',
-  Sempare.Streams in 'src\Sempare.Streams.pas',
-  Sempare.Streams.Rtti in 'src\Sempare.Streams.Rtti.pas',
-  Sempare.Streams.Sort in 'src\Sempare.Streams.Sort.pas',
-  Sempare.Streams.Types in 'src\Sempare.Streams.Types.pas',
-  Sempare.Streams.Enum in 'src\Sempare.Streams.Enum.pas';
+  Sempare.Streams in 'src\Sempare.Streams.pas';
 
 end.

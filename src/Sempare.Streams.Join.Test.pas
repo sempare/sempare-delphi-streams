@@ -37,7 +37,7 @@ interface
 uses
   System.Generics.Collections,
   System.SysUtils,
-  Sempare.Streams.Enum,
+  Sempare.Streams,
   Sempare.Streams.Test.Common,
   DUnitX.TestFramework;
 
@@ -67,7 +67,6 @@ type
 
 implementation
 
-uses Sempare.Streams;
 
 procedure TStreamsJoinTest.Setup;
 begin
