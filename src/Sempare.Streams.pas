@@ -44,9 +44,9 @@ uses
   System.Rtti,
   Sempare.Streams.Rtti,
   System.SysUtils,
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
-  Spring.Collections,
-{$ENDIF}
+//{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
+//  Spring.Collections,
+//{$ENDIF}
   Sempare.Streams.Types,
   Sempare.Streams.Expr,
   Sempare.Streams.Filter,
@@ -244,8 +244,8 @@ type
     /// ToList returns all the items from the stream into a TList.
     /// <summary>
     function ToList(): TList<T>;
-
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+                 (*
+{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
     /// <summary>
     /// ToIList returns all the items from the stream into a Spring4d IList.
     /// <summary>
@@ -256,7 +256,7 @@ type
     /// <summary>
     function ToISet(): ISet<T>;
 
-{$ENDIF}
+{$ENDIF}        *)
     /// <summary>
     /// Equals returns true if all the items match another stream.
     /// <summary>
@@ -361,8 +361,8 @@ type
     /// Where items in the stream based on filter function. (An alias for filter)
     /// <summary>
     function Where(const ACondition: TFilterFunction<T>): TStreamOperation<T>; overload;
-
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+         (*
+{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
     /// <summary>
     /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
     /// <summary>
@@ -380,7 +380,7 @@ type
     /// <summary>
     function IGroupToLists<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, IList<TValueType>>; overload;
 
-{$ENDIF}
+{$ENDIF}    *)
     /// <summary>
     /// Group by items matching a field expression. The TKeyType shoul match the type in the class or record.
     /// <summary>
@@ -533,15 +533,15 @@ type
     /// <param name="ASource">A source of type TArray&lt;T&gt;.</param>
     /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the TArray source.</returns>;
     class function From<T>(const ASource: TArray<T>): TStreamOperation<T>; overload; static;
-
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+                 (*
+{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
     /// <summary>
     /// Stream from a IEnumerable&lt;T&gt; source.
     /// </summary>
     /// <param name="ASource">A source of type IEnumerable&lt;T&gt;.</param>
     /// <returns>TStreamOperation&lt;T&gt; allowing additional operations on the IEnumerable source.</returns>
     class function From<T>(ASource: Spring.Collections.IEnumerable<T>): TStreamOperation<T>; overload; static;
-{$ENDIF}
+{$ENDIF}    *)
     /// <summary>
     /// Stream over chars in a string
     /// </summary>
@@ -940,8 +940,8 @@ class operator TStreamOperation<T>.Implicit(Enum: IEnum<T>): TStreamOperation<T>
 begin
   result.FEnum := Enum;
 end;
-
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+                            (*
+{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
 
 function TStreamOperation<T>.IGroupBy<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): IDictionary<TKeyType, TValueType>;
 begin
@@ -963,7 +963,7 @@ begin
   exit(Enum.IGroupToLists<T, TKeyType>(FEnum, AField.FieldExpr));
 end;
 
-{$ENDIF}
+{$ENDIF}  *)
 
 function TStreamOperation<T>.GroupBy<TKeyType, TValueType>(AField: TFieldExpression; const AFunction: TMapFunction<T, TValueType>): TDictionary<TKeyType, TValueType>;
 begin
@@ -1158,8 +1158,8 @@ function TStreamOperation<T>.ToList: TList<T>;
 begin
   exit(Enum.ToList<T>(FEnum));
 end;
-
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+                  (*
+{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
 
 function TStreamOperation<T>.ToIList(): IList<T>;
 begin
@@ -1173,7 +1173,7 @@ begin
   Enum.CopyFromEnum<T>(FEnum, result);
 end;
 
-{$ENDIF}
+{$ENDIF}   *)
 
 function TStreamOperation<T>.TryTakeOne(out AValue: T): boolean;
 var
@@ -1286,15 +1286,15 @@ class function Stream.From<T>(const ASource: TArray<T>): TStreamOperation<T>;
 begin
   exit(TArrayEnum<T>.Create(ASource));
 end;
-
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+          (*
+{$IFDEF SEMPARE_STREAMS_SPRING4D_SUPPORT}
 
 class function Stream.From<T>(ASource: Spring.Collections.IEnumerable<T>): TStreamOperation<T>;
 begin
   exit(Enum.FromSpring4D<T>(ASource));
 end;
 
-{$ENDIF}
+{$ENDIF}    *)
 
 class function Stream.From<T>(const ASource: TEnumerable<T>): TStreamOperation<T>;
 begin
