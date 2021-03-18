@@ -12,8 +12,7 @@
  *          https://www.github.com/sempare/sempare-streams                    *
  ******************************************************************************
  *                                                                            *
- * Copyright (c) 2020 Sempare Limited,                                        *
- *                    Conrad Vermeulen <conrad.vermeulen@gmail.com>           *
+ * Copyright (c) 2020-2021 Sempare Limited                                    *
  *                                                                            *
  * Contact: info@sempare.ltd                                                  *
  *                                                                            *
