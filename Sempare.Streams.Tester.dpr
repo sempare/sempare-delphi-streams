@@ -59,11 +59,7 @@ uses
   {$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
   Sempare.Streams.Spring4d.Test in 'src\Sempare.Streams.Spring4d.Test.pas',
   {$ENDIF }
-  Sempare.Streams.Test in 'src\Sempare.Streams.Test.pas',
-  Sempare.Streams.Spring4d in 'src\Sempare.Streams.Spring4d.pas',
-  Sempare.Streams.Arr.Test in 'src\Sempare.Streams.Arr.Test.pas',
-  Sempare.Streams.List.Test in 'src\Sempare.Streams.List.Test.pas',
-  Sempare.Streams.Group.Test in 'src\Sempare.Streams.Group.Test.pas';
+  Sempare.Streams.Test in 'src\Sempare.Streams.Test.pas';
 
 var
   runner: ITestRunner;

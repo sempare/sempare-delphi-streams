@@ -5,7 +5,7 @@
         <ProjectVersion>19.2</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Package</AppType>
@@ -134,7 +134,6 @@
         <DCCReference Include="src\Sempare.Streams.Sort.pas"/>
         <DCCReference Include="src\Sempare.Streams.Types.pas"/>
         <DCCReference Include="src\Sempare.Streams.Enum.pas"/>
-        <DCCReference Include="src\Sempare.Streams.Spring4d.pas"/>
         <None Include="src\Sempare.Streams.inc"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

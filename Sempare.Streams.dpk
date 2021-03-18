@@ -71,7 +71,6 @@ contains
   Sempare.Streams.Rtti in 'src\Sempare.Streams.Rtti.pas',
   Sempare.Streams.Sort in 'src\Sempare.Streams.Sort.pas',
   Sempare.Streams.Types in 'src\Sempare.Streams.Types.pas',
-  Sempare.Streams.Enum in 'src\Sempare.Streams.Enum.pas',
-  Sempare.Streams.Spring4d in 'src\Sempare.Streams.Spring4d.pas';
+  Sempare.Streams.Enum in 'src\Sempare.Streams.Enum.pas';
 
 end.
