@@ -51,6 +51,7 @@ type
     [Teardown]
     procedure Teardown; override;
 
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
     [Test]
     procedure TestEmptyList;
 
@@ -65,13 +66,15 @@ type
 
     [Test]
     procedure ToSet;
-
+{$ENDIF}
   end;
 
 implementation
 
 uses
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
   Spring.Collections,
+{$ENDIF}
   Sempare.Streams;
 
 { TSpring4dStreamTest }
@@ -87,6 +90,7 @@ begin
   inherited;
 
 end;
+{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
 
 procedure TSpring4dStreamTest.TestEmptyList;
 var
@@ -149,6 +153,8 @@ begin
   Assert.IsTrue( //
     Stream.From<Integer>(l2).Equals(Stream.From<Integer>(l)));
 end;
+
+{$ENDIF}
 
 initialization
 
