@@ -56,8 +56,7 @@ type
 implementation
 
 uses
-  Spring.Collections,
-  Sempare.Streams.Spring4d;
+  Spring.Collections;
 
 { TStreamArrayTest }
 
