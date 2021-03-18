@@ -330,13 +330,11 @@ Uncomment the following line in src/Sempare.Streams.inc:
 ```
 or simply add the define SEMPARE_STREAMS_SPRING4D_SUPPORT in the project options.
 
-Support is provided by a helper class. Simply add the unit
-```
-uses
-        Sempare.Streams.Spring4d;
-```
+BREAKING CHANGE:
 
-You don't need to include Sempare.Streams as there is a reference to the Stream Record as convenience.
+Before, you would add support by including the ```Sempare.Streams.Spring4d``` unit.
+The functionality has been integrated into the main ```Sempare.Stream``` unit, so this additional
+reference is no longer required.
 
 ## Optimising your queries
 

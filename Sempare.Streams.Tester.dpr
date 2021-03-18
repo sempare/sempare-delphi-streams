@@ -39,9 +39,9 @@ program Sempare.Streams.Tester;
 
 uses
   System.SysUtils,
-{$IFDEF TESTINSIGHT}
+  {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
-{$ENDIF }
+  {$ENDIF }
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
   DUnitX.TestFramework,
@@ -56,13 +56,14 @@ uses
   Sempare.Streams.Filter.Test in 'src\Sempare.Streams.Filter.Test.pas',
   Sempare.Streams.Test.Common in 'src\Sempare.Streams.Test.Common.pas',
   Sempare.Streams.Enum.Test in 'src\Sempare.Streams.Enum.Test.pas',
-{$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
+  {$IF defined(SEMPARE_STREAMS_SPRING4D_SUPPORT)}
   Sempare.Streams.Spring4d.Test in 'src\Sempare.Streams.Spring4d.Test.pas',
-{$ENDIF }
+  {$ENDIF }
   Sempare.Streams.Test in 'src\Sempare.Streams.Test.pas',
   Sempare.Streams.Spring4d in 'src\Sempare.Streams.Spring4d.pas',
   Sempare.Streams.Arr.Test in 'src\Sempare.Streams.Arr.Test.pas',
-  Sempare.Streams.List.Test in 'src\Sempare.Streams.List.Test.pas';
+  Sempare.Streams.List.Test in 'src\Sempare.Streams.List.Test.pas',
+  Sempare.Streams.Group.Test in 'src\Sempare.Streams.Group.Test.pas';
 
 var
   runner: ITestRunner;
