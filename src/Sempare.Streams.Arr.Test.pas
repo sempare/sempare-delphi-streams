@@ -55,9 +55,6 @@ type
 
 implementation
 
-uses
-  Spring.Collections;
-
 { TStreamArrayTest }
 
 procedure TStreamArrayTest.Setup;
